@@ -35,7 +35,7 @@ from quality_management import init_quality_management
 from api_routes import api_bp
 
 # Initialize Flask app
-app = Flask(__name__, static_folder='frontend/build', static_url_path='')
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hospital_web.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
