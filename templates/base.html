@@ -1,309 +1,221 @@
 <!DOCTYPE html>
 <html lang="{{ get_language() }}">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}{{ get_text('title') }}{% endblock %}</title>
 
-    <!-- Bootstrap CSS -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <!-- Font Awesome -->
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-      rel="stylesheet"
-    />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}{{ get_text('title') }}{% endblock %}</title>
 
-    <link href="../static/style.css" rel="stylesheet" />
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
 
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="{{ url_for('static', filename='apple-touch-icon.png') }}"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="{{ url_for('static', filename='favicon-32x32.png') }}"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="{{ url_for('static', filename='favicon-16x16.png') }}"
-    />
-    <link
-      rel="manifest"
-      href="{{ url_for('static', filename='site.webmanifest') }}"
-    />
+  <link href="../static/style.css" rel="stylesheet" />
 
-    {% block extra_css %}{% endblock %}
-  </head>
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}" />
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}" />
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}" />
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}" />
 
-  <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="{{ url_for('index') }}">
-          <i class="fas fa-hospital-alt medical-cross"></i>
-          {% if current_branch %} {{ current_branch.name }} {% else %} MediCare
-          Pro {% endif %}
-        </a>
+  {% block extra_css %}{% endblock %}
+</head>
 
-        {% if current_branch and current_user.is_authenticated %}
-        <div class="navbar-text me-3">
-          <small class="text-light">
-            <i class="fas fa-map-marker-alt"></i>
-            {{ current_branch.city or '' }}{% if current_branch.city and
-            current_branch.state %}, {% endif %}{{ current_branch.state or '' }}
-          </small>
-        </div>
-        {% endif %}
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{{ url_for('index') }}">
+        <i class="fas fa-hospital-alt medical-cross"></i>
+        {% if current_branch %} {{ current_branch.name }} {% else %} MediCare
+        Pro {% endif %}
+      </a>
 
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
+      {% if current_branch and current_user.is_authenticated %}
+      <div class="navbar-text me-3">
+        <small class="text-light">
+          <i class="fas fa-map-marker-alt"></i>
+          {{ current_branch.city or '' }}{% if current_branch.city and
+          current_branch.state %}, {% endif %}{{ current_branch.state or '' }}
+        </small>
+      </div>
+      {% endif %}
 
-        <div class="collapse navbar-collapse" id="navbarNav">
-          {% if current_user.is_authenticated %}
-          <ul class="navbar-nav me-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('dashboard') }}">
-                <i class="fas fa-tachometer-alt"></i>
-                <!-- {{ get_text('dashboard') }} -->
-              </a>
-            </li>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-            <!-- Patient Management -->
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                role="button"
-                data-bs-toggle="dropdown"
-              >
-                <i class="fas fa-users"></i> {{ get_text('patients') }}
-              </a>
-              <ul class="dropdown-menu">
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('patients') }}"
-                    ><i class="fas fa-list"></i> {{ get_text('all_patients')
-                    }}</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('add_patient') }}"
-                    ><i class="fas fa-user-plus"></i> {{ get_text('add_patient')
-                    }}</a
-                  >
-                </li>
-              </ul>
-            </li>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        {% if current_user.is_authenticated %}
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('dashboard') }}">
+              <i class="fas fa-tachometer-alt"></i>
+              <!-- {{ get_text('dashboard') }} -->
+            </a>
+          </li>
 
-            <!-- Appointments -->
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                role="button"
-                data-bs-toggle="dropdown"
-              >
-                <i class="fas fa-calendar-alt"></i> {{ get_text('appointments')
-                }}
-              </a>
-              <ul class="dropdown-menu">
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('appointments') }}"
-                    ><i class="fas fa-list"></i> {{ get_text('all_appointments')
-                    }}</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('add_appointment') }}"
-                    ><i class="fas fa-plus"></i> {{ get_text('schedule_new')
-                    }}</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('telemedicine') }}"
-                    ><i class="fas fa-video"></i> {{ get_text('telemedicine')
-                    }}</a
-                  >
-                </li>
-              </ul>
-            </li>
+          <!-- Patient Management -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-users"></i> {{ get_text('patients') }}
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" href="{{ url_for('patients') }}"><i class="fas fa-list"></i> {{
+                  get_text('all_patients')
+                  }}</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('add_patient') }}"><i class="fas fa-user-plus"></i> {{
+                  get_text('add_patient')
+                  }}</a>
+              </li>
+            </ul>
+          </li>
 
-            <!-- Clinical -->
-            {% if current_user.role in ['admin', 'doctor', 'nurse', 'lab_tech']
-            %}
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                role="button"
-                data-bs-toggle="dropdown"
-              >
-                <i class="fas fa-stethoscope"></i> {{ get_text('clinical') }}
-              </a>
-              <ul class="dropdown-menu">
-                {% if current_user.role in ['admin', 'doctor', 'lab_tech'] %}
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('lab_orders') }}"
-                    ><i class="fas fa-flask"></i> {{ get_text('lab_orders')
-                    }}</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('imaging_orders') }}"
-                    ><i class="fas fa-x-ray"></i> {{ get_text('imaging_orders')
-                    }}</a
-                  >
-                </li>
-                {% endif %} {% if current_user.role in ['admin', 'doctor',
-                'nurse'] %}
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('admissions') }}"
-                    ><i class="fas fa-bed"></i> {{ get_text('admissions') }}</a
-                  >
-                </li>
-                {% endif %}
-              </ul>
-            </li>
-            {% endif %}
+          <!-- Appointments -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-calendar-alt"></i> {{ get_text('appointments')
+              }}
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" href="{{ url_for('appointments') }}"><i class="fas fa-list"></i> {{
+                  get_text('all_appointments')
+                  }}</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('add_appointment') }}"><i class="fas fa-plus"></i> {{
+                  get_text('schedule_new')
+                  }}</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('telemedicine') }}"><i class="fas fa-video"></i> {{
+                  get_text('telemedicine')
+                  }}</a>
+              </li>
+            </ul>
+          </li>
 
-            <!-- Pharmacy -->
-            {% if current_user.role in ['admin', 'pharmacist'] %}
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                role="button"
-                data-bs-toggle="dropdown"
-              >
-                <i class="fas fa-pills"></i> {{ get_text('pharmacy') }}
-              </a>
-              <ul class="dropdown-menu">
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('pharmacy_medicines') }}"
-                    ><i class="fas fa-capsules"></i> {{ get_text('medicines')
-                    }}</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('pharmacy_orders') }}"
-                    ><i class="fas fa-prescription"></i> {{
-                    get_text('pharmacy_orders') }}</a
-                  >
-                </li>
-              </ul>
-            </li>
-            {% endif %}
+          <!-- Clinical -->
+          {% if current_user.role in ['admin', 'doctor', 'nurse', 'lab_tech']
+          %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-stethoscope"></i> {{ get_text('clinical') }}
+            </a>
+            <ul class="dropdown-menu">
+              {% if current_user.role in ['admin', 'doctor', 'lab_tech'] %}
+              <li>
+                <a class="dropdown-item" href="{{ url_for('lab_orders') }}"><i class="fas fa-flask"></i> {{
+                  get_text('lab_orders')
+                  }}</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('imaging_orders') }}"><i class="fas fa-x-ray"></i> {{
+                  get_text('imaging_orders')
+                  }}</a>
+              </li>
+              {% endif %} {% if current_user.role in ['admin', 'doctor',
+              'nurse'] %}
+              <li>
+                <a class="dropdown-item" href="{{ url_for('admissions') }}"><i class="fas fa-bed"></i> {{
+                  get_text('admissions') }}</a>
+              </li>
+              {% endif %}
+            </ul>
+          </li>
+          {% endif %}
 
-            <!-- Billing -->
-            {% if current_user.role in ['admin', 'receptionist', 'accountant']
-            %}
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                role="button"
-                data-bs-toggle="dropdown"
-              >
-                <i class="fas fa-file-invoice-dollar"></i> {{
-                get_text('billing') }}
-              </a>
-              <ul class="dropdown-menu">
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('billing') }}"
-                    ><i class="fas fa-list"></i> {{ get_text('all_bills') }}</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('create_bill') }}"
-                    ><i class="fas fa-plus"></i> {{ get_text('create_bill')
-                    }}</a
-                  >
-                </li>
-              </ul>
-            </li>
-            {% endif %}
+          <!-- Pharmacy -->
+          {% if current_user.role in ['admin', 'pharmacist'] %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-pills"></i> {{ get_text('pharmacy') }}
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" href="{{ url_for('pharmacy_medicines') }}"><i class="fas fa-capsules"></i> {{
+                  get_text('medicines')
+                  }}</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('pharmacy_orders') }}"><i class="fas fa-prescription"></i> {{
+                  get_text('pharmacy_orders') }}</a>
+              </li>
+            </ul>
+          </li>
+          {% endif %}
 
-            <!-- Administration -->
-            {% if current_user.role in ['admin', 'hr'] %}
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                role="button"
-                data-bs-toggle="dropdown"
-              >
-                <i class="fas fa-cogs"></i> {{ get_text('administration') }}
-              </a>
-              <ul class="dropdown-menu">
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('staff_management') }}"
-                    ><i class="fas fa-users-cog"></i> {{
-                    get_text('staff_management') }}</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('attendance') }}"
-                    ><i class="fas fa-clock"></i> {{ get_text('attendance')
-                    }}</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('manage_departments') }}"
-                    ><i class="fas fa-building"></i> {{ get_text('departments')
-                    }}</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('manage_wards') }}"
-                    ><i class="fas fa-bed"></i> {{ get_text('wards_beds') }}</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('reports') }}"
-                    ><i class="fas fa-chart-bar"></i> {{ get_text('reports')
-                    }}</a
-                  >
-                </li>
-              </ul>
-            </li>
-            {% endif %}
+          <!-- Billing -->
+          {% if current_user.role in ['admin', 'receptionist', 'accountant']
+          %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-file-invoice-dollar"></i> {{
+              get_text('billing') }}
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" href="{{ url_for('billing') }}"><i class="fas fa-list"></i> {{
+                  get_text('all_bills') }}</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('create_bill') }}"><i class="fas fa-plus"></i> {{
+                  get_text('create_bill')
+                  }}</a>
+              </li>
+            </ul>
+          </li>
+          {% endif %}
 
-            <!-- General -->
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('enquiries') }}">
-                <i class="fas fa-envelope"></i> {{ get_text('enquiries') }}
-              </a>
-            </li>
-          </ul>
+          <!-- Administration -->
+          {% if current_user.role in ['admin', 'hr'] %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-cogs"></i> {{ get_text('administration') }}
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" href="{{ url_for('staff_management') }}"><i class="fas fa-users-cog"></i> {{
+                  get_text('staff_management') }}</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('attendance') }}"><i class="fas fa-clock"></i> {{
+                  get_text('attendance')
+                  }}</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('manage_departments') }}"><i class="fas fa-building"></i> {{
+                  get_text('departments')
+                  }}</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('manage_wards') }}"><i class="fas fa-bed"></i> {{
+                  get_text('wards_beds') }}</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('reports') }}"><i class="fas fa-chart-bar"></i> {{
+                  get_text('reports')
+                  }}</a>
+              </li>
+            </ul>
+          </li>
+          {% endif %}
 
-          <ul class="navbar-nav">
-            <!-- Branch Switcher -->
-            <!-- {% if current_user.is_authenticated and current_user.role == 'admin'
+          <!-- General -->
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('enquiries') }}">
+              <i class="fas fa-envelope"></i> {{ get_text('enquiries') }}
+            </a>
+          </li>
+        </ul>
+
+        <ul class="navbar-nav">
+          <!-- Branch Switcher -->
+          <!-- {% if current_user.is_authenticated and current_user.role == 'admin'
             %}
             <li class="nav-item dropdown">
               <a
@@ -326,272 +238,218 @@
                   </a>
                 </li>
                 <li><hr class="dropdown-divider" /></li> -->
-            <!-- Branch list would be populated dynamically -->
-            <!-- </ul>
+          <!-- Branch list would be populated dynamically -->
+          <!-- </ul>
             </li>
             {% endif %} -->
 
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                role="button"
-                data-bs-toggle="dropdown"
-              >
-                <i class="fas fa-globe"></i> {{ get_text('language') }}
-              </a>
-              <ul class="dropdown-menu">
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('set_language', language='en') }}"
-                    >🇺🇸 English</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('set_language', language='hi') }}"
-                    >🇮🇳 हिंदी</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('set_language', language='te') }}"
-                    >🇮🇳 తెలుగు</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('set_language', language='ta') }}"
-                    >🇮🇳 தமிழ்</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('set_language', language='mr') }}"
-                    >🇮🇳 मराठी</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('set_language', language='bn') }}"
-                    >🇮🇳 বাংলা</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('set_language', language='gu') }}"
-                    >🇮🇳 ગુજરાતી</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{{ url_for('set_language', language='kn') }}"
-                    >🇮🇳 ಕನ್ನಡ</a
-                  >
-                </li>
-              </ul>
-            </li>
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                role="button"
-                data-bs-toggle="dropdown"
-              >
-                <i class="fas fa-user"></i> {{ current_user.username }}
-              </a>
-              <ul class="dropdown-menu">
-                <li>
-                  <a class="dropdown-item" href="#"
-                    ><i class="fas fa-user-cog"></i> {{ get_text('profile')
-                    }}</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="#"
-                    ><i class="fas fa-cog"></i> {{ get_text('settings') }}</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('settings') }}"
-                    ><i class="fas fa-dollar-sign"></i> Currency Settings</a
-                  >
-                </li>
-                <li>
-                  <hr class="dropdown-divider" />
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{{ url_for('logout') }}"
-                    ><i class="fas fa-sign-out-alt"></i> {{ get_text('logout')
-                    }}</a
-                  >
-                </li>
-              </ul>
-            </li>
-          </ul>
-          {% else %}
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('login') }}">
-                <i class="fas fa-sign-in-alt"></i> {{ get_text('login') }}
-              </a>
-            </li>
-          </ul>
-          {% endif %}
-        </div>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-globe"></i> {{ get_text('language') }}
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" href="{{ url_for('set_language', language='en') }}">🇺🇸 English</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('set_language', language='hi') }}">🇮🇳 हिंदी</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('set_language', language='te') }}">🇮🇳 తెలుగు</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('set_language', language='ta') }}">🇮🇳 தமிழ்</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('set_language', language='mr') }}">🇮🇳 मराठी</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('set_language', language='bn') }}">🇮🇳 বাংলা</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('set_language', language='gu') }}">🇮🇳 ગુજરાતી</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('set_language', language='kn') }}">🇮🇳 ಕನ್ನಡ</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-user"></i> {{ current_user.username }}
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" href="#"><i class="fas fa-user-cog"></i> {{ get_text('profile')
+                  }}</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#"><i class="fas fa-cog"></i> {{ get_text('settings') }}</a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('settings') }}"><i class="fas fa-dollar-sign"></i> Currency
+                  Settings</a>
+              </li>
+              <li>
+                <hr class="dropdown-divider" />
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> {{
+                  get_text('logout')
+                  }}</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+        {% else %}
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('login') }}">
+              <i class="fas fa-sign-in-alt"></i> {{ get_text('login') }}
+            </a>
+          </li>
+        </ul>
+        {% endif %}
       </div>
-    </nav>
-
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %} {% if
-    messages %}
-    <div class="container mt-3">
-      {% for category, message in messages %}
-      <div
-        class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
-        role="alert"
-      >
-        <i
-          class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }}"
-        ></i>
-        {{ message }}
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-        ></button>
-      </div>
-      {% endfor %}
     </div>
-    {% endif %} {% endwith %}
+  </nav>
 
-    <!-- Main Content -->
-    <main class="container-fluid mt-4">{% block content %}{% endblock %}</main>
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}
+  <div class="container mt-3">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+      role="alert">
+      <i
+        class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }}"></i>
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %} {% endwith %}
 
-    <!-- Footer -->
-    <footer class="bg-dark text-light text-center py-3 mt-auto">
-      <div class="container">
-        <p>
-          &copy; <span id="current-year"></span> MediCare Pro Hospital
-          Management System. All rights reserved. | SkywebSitedev
-        </p>
-      </div>
-    </footer>
+  <!-- Main Content -->
+  <main class="container-fluid mt-4">{% block content %}{% endblock %}</main>
 
-    <!-- HTMX -->
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Moment.js for date handling -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-    <!-- SweetAlert2 for better alerts -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Chart.js for analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Footer -->
+  <footer class="bg-dark text-light text-center py-3 mt-auto">
+    <div class="container">
+      <p>
+        &copy; <span id="current-year"></span> MediCare Pro Hospital
+        Management System. All rights reserved. | SkywebSitedev
+      </p>
+    </div>
+  </footer>
 
-    <!-- Global HTMX Configuration -->
-    <script>
-      // Configure HTMX
-      htmx.config.globalViewTransitions = true;
-      htmx.config.defaultSwapStyle = "innerHTML";
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Moment.js for date handling -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+  <!-- SweetAlert2 for better alerts -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Chart.js for analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-      // Global error handler
-      document.body.addEventListener("htmx:responseError", function (evt) {
+  <!-- Global HTMX Configuration -->
+  <script>
+    // Configure HTMX
+    htmx.config.globalViewTransitions = true;
+    htmx.config.defaultSwapStyle = "innerHTML";
+
+    // Global error handler
+    document.body.addEventListener("htmx:responseError", function (evt) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Something went wrong. Please try again.",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3000,
+      });
+    });
+
+    // Loading indicator
+    document.body.addEventListener("htmx:beforeRequest", function (evt) {
+      document.body.style.cursor = "wait";
+    });
+
+    document.body.addEventListener("htmx:afterRequest", function (evt) {
+      document.body.style.cursor = "default";
+    });
+
+    // Success notifications
+    document.body.addEventListener("htmx:afterSwap", function (evt) {
+      if (evt.detail.xhr.getResponseHeader("HX-Success")) {
         Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "Something went wrong. Please try again.",
+          icon: "success",
+          title: "Success",
+          text: evt.detail.xhr.getResponseHeader("HX-Success"),
           toast: true,
           position: "top-end",
           showConfirmButton: false,
           timer: 3000,
         });
-      });
+      }
+    });
+  </script>
 
-      // Loading indicator
-      document.body.addEventListener("htmx:beforeRequest", function (evt) {
-        document.body.style.cursor = "wait";
-      });
+  <script>
+    document.getElementById("current-year").textContent =
+      new Date().getFullYear();
+  </script>
 
-      document.body.addEventListener("htmx:afterRequest", function (evt) {
-        document.body.style.cursor = "default";
-      });
-
-      // Success notifications
-      document.body.addEventListener("htmx:afterSwap", function (evt) {
-        if (evt.detail.xhr.getResponseHeader("HX-Success")) {
-          Swal.fire({
-            icon: "success",
-            title: "Success",
-            text: evt.detail.xhr.getResponseHeader("HX-Success"),
-            toast: true,
-            position: "top-end",
-            showConfirmButton: false,
-            timer: 3000,
-          });
-        }
-      });
-    </script>
-    
-    <script>
-      document.getElementById("current-year").textContent =
-        new Date().getFullYear();
-    </script>
-    
-    {% if current_user.is_authenticated and current_user.role == 'admin' %}
-    <script>
-      var isAdmin = true;
-      // Load branches for dropdown
-      document.addEventListener('DOMContentLoaded', function() {
-        // Fetch branches from API
-        fetch('/api/branches')
-          .then(response => response.json())
-          .then(branches => {
-            const branchDropdown = document.querySelector('.navbar-nav .dropdown-menu');
-            if (branchDropdown) {
-              // Find the branch dropdown menu
-              const branchMenu = branchDropdown.querySelector('li:nth-child(1) .dropdown-menu');
-              if (branchMenu) {
-                // Clear existing branch items (keep "All Branches" and divider)
-                while (branchMenu.children.length > 2) {
-                  branchMenu.removeChild(branchMenu.lastChild);
-                }
-
-                // Add branch items
-                branches.forEach(branch => {
-                  const li = document.createElement('li');
-                  const a = document.createElement('a');
-                  a.className = 'dropdown-item';
-                  a.href = `/switch-branch/${branch.id}`;
-                  a.innerHTML = `<i class="fas fa-building"></i> ${branch.name}`;
-                  if (branch.city || branch.state) {
-                    a.innerHTML += ` <small class="text-muted">(${branch.city || ''}${branch.city && branch.state ? ', ' : ''}${branch.state || ''})</small>`;
-                  }
-                  li.appendChild(a);
-                  branchMenu.appendChild(li);
-                });
+  {% if current_user.is_authenticated and current_user.role == 'admin' %}
+  <script>
+    var isAdmin = true;
+    // Load branches for dropdown
+    document.addEventListener('DOMContentLoaded', function () {
+      // Fetch branches from API
+      fetch('/api/branches')
+        .then(response => response.json())
+        .then(branches => {
+          const branchDropdown = document.querySelector('.navbar-nav .dropdown-menu');
+          if (branchDropdown) {
+            // Find the branch dropdown menu
+            const branchMenu = branchDropdown.querySelector('li:nth-child(1) .dropdown-menu');
+            if (branchMenu) {
+              // Clear existing branch items (keep "All Branches" and divider)
+              while (branchMenu.children.length > 2) {
+                branchMenu.removeChild(branchMenu.lastChild);
               }
+
+              // Add branch items
+              branches.forEach(branch => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.className = 'dropdown-item';
+                a.href = `/switch-branch/${branch.id}`;
+                a.innerHTML = `<i class="fas fa-building"></i> ${branch.name}`;
+                if (branch.city || branch.state) {
+                  a.innerHTML += ` <small class="text-muted">(${branch.city || ''}${branch.city && branch.state ? ', ' : ''}${branch.state || ''})</small>`;
+                }
+                li.appendChild(a);
+                branchMenu.appendChild(li);
+              });
             }
-          })
-          .catch(error => console.error('Error loading branches:', error));
-      });
-    </script>
-    {% else %}
-    <script>
-      var isAdmin = false;
-    </script>
-    {% endif %}
-    
-    {% block extra_js %}{% endblock %}
-  </body>
+          }
+        })
+        .catch(error => console.error('Error loading branches:', error));
+    });
+  </script>
+  {% else %}
+  <script>
+    var isAdmin = false;
+  </script>
+  {% endif %}
+
+  {% block extra_js %}{% endblock %}
+</body>
+
 </html>

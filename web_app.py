@@ -2991,17 +2991,50 @@ def set_language(language):
 def get_all_settings():
     """Get all settings from database as a dictionary"""
     settings = {}
-    for setting in HospitalSetting.query.all():
-        # Convert setting value based on type
-        if setting.setting_type == 'number':
-            try:
-                settings[setting.setting_key] = float(setting.setting_value)
-            except (ValueError, TypeError):
-                settings[setting.setting_key] = 0.0
-        elif setting.setting_type == 'boolean':
-            settings[setting.setting_key] = setting.setting_value.lower() in ('true', '1', 'yes')
-        else:
-            settings[setting.setting_key] = setting.setting_value
+    try:
+        for setting in HospitalSetting.query.all():
+            # Convert setting value based on type
+            if setting.setting_type == 'number':
+                try:
+                    settings[setting.setting_key] = float(setting.setting_value)
+                except (ValueError, TypeError):
+                    settings[setting.setting_key] = 0.0
+            elif setting.setting_type == 'boolean':
+                settings[setting.setting_key] = setting.setting_value.lower() in ('true', '1', 'yes')
+            else:
+                settings[setting.setting_key] = setting.setting_value
+    except Exception as e:
+        # If table doesn't exist or query fails, return default settings
+        print(f"Warning: Could not load settings from database: {e}")
+        settings = {
+            'hospital_name': 'MediCare Pro',
+            'hospital_tagline': 'Your Health, Our Priority',
+            'primary_color': '#0d6efd',
+            'secondary_color': '#6c757d',
+            'currency': 'USD',
+            'password_min_length': 8,
+            'password_expiry_days': 90,
+            'default_language': 'en',
+            'enable_multilingual': False,
+        }
+    
+    # Ensure we always have default values for required settings
+    default_values = {
+        'hospital_name': 'MediCare Pro',
+        'hospital_tagline': 'Your Health, Our Priority',
+        'primary_color': '#0d6efd',
+        'secondary_color': '#6c757d',
+        'currency': 'USD',
+        'password_min_length': 8,
+        'password_expiry_days': 90,
+        'default_language': 'en',
+        'enable_multilingual': False,
+    }
+    
+    for key, default_value in default_values.items():
+        if key not in settings:
+            settings[key] = default_value
+    
     return settings
 
 def update_setting(key, value, setting_type='string', category='general', description=''):
