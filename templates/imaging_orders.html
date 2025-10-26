@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Imaging Orders{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-x-ray text-info"></i> Imaging Orders</h4>
+                    {% if current_user.role == 'doctor' %}
+                    <button class="btn btn-primary" hx-get="{{ url_for('add_imaging_order') }}"
+                        hx-target="#modal-content" hx-trigger="click" data-bs-toggle="modal"
+                        data-bs-target="#dynamicModal">
+                        <i class="fas fa-plus"></i> New Imaging Order
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select class="form-select" hx-get="{{ url_for('imaging_orders') }}"
+                                hx-target="#orders-table" hx-trigger="change" name="status">
+                                <option value="">All Status</option>
+                                <option value="ordered" {{ 'selected' if status_filter=='ordered' }}>Ordered</option>
+                                <option value="scheduled" {{ 'selected' if status_filter=='scheduled' }}>Scheduled
+                                </option>
+                                <option value="completed" {{ 'selected' if status_filter=='completed' }}>Completed
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" placeholder="Search patient..."
+                                hx-get="{{ url_for('imaging_orders') }}" hx-target="#orders-table"
+                                hx-trigger="keyup changed delay:500ms" name="search">
+                        </div>
+                    </div>
+
+                    <!-- Orders Table -->
+                    <div id="orders-table">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Patient</th>
+                                        <th>Test</th>
+                                        <th>Doctor</th>
+                                        <th>Order Date</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders.items %}
+                                    <tr>
+                                        <td>{{ order.id }}</td>
+                                        <td>{{ order.patient.first_name }} {{ order.patient.last_name }}</td>
+                                        <td>{{ order.test.test_name }}</td>
+                                        <td>{{ order.doctor.full_name }}</td>
+                                        <td>{{ order.order_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            <span
+                                                class="badge bg-{{ 'danger' if order.priority == 'urgent' else 'info' }}">
+                                                {{ order.priority.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span
+                                                class="badge bg-{{ 'success' if order.status == 'completed' else 'warning' }}">
+                                                {{ order.status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-info" hx-get="/imaging/order/{{ order.id }}/view"
+                                                    hx-target="#modal-content" data-bs-toggle="modal"
+                                                    data-bs-target="#dynamicModal">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                {% if current_user.role in ['radiologist', 'admin'] and order.status !=
+                                                'completed' %}
+                                                <button class="btn btn-success"
+                                                    hx-get="/imaging/order/{{ order.id }}/result"
+                                                    hx-target="#modal-content" data-bs-toggle="modal"
+                                                    data-bs-target="#dynamicModal">
+                                                    <i class="fas fa-plus"></i> Add Result
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if orders.pages > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if orders.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    hx-get="{{ url_for('imaging_orders', page=orders.prev_num, status=status_filter) }}"
+                                    hx-target="#orders-table">Previous</a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in orders.iter_pages() %}
+                            {% if page_num %}
+                            {% if page_num != orders.page %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    hx-get="{{ url_for('imaging_orders', page=page_num, status=status_filter) }}"
+                                    hx-target="#orders-table">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if orders.has_next %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    hx-get="{{ url_for('imaging_orders', page=orders.next_num, status=status_filter) }}"
+                                    hx-target="#orders-table">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dynamic Modal -->
+<div class="modal fade" id="dynamicModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}

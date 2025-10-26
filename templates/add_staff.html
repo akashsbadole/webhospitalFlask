@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Add Staff Member{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Add New Staff Member</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <!-- Basic Information -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Basic Information</h5>
+
+                                <div class="mb-3">
+                                    <label for="full_name" class="form-label">Full Name *</label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Username *</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                    <small class="form-text text-muted">Used for login</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email *</label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password *</label>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                    <small class="form-text text-muted">Minimum 6 characters</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone">
+                                </div>
+                            </div>
+
+                            <!-- Professional Information -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Professional Information</h5>
+
+                                <div class="mb-3">
+                                    <label for="role" class="form-label">Role *</label>
+                                    <select class="form-select" id="role" name="role" required
+                                        onchange="toggleSpecialization()">
+                                        <option value="">Select Role</option>
+                                        <option value="doctor">Doctor</option>
+                                        <option value="nurse">Nurse</option>
+                                        <option value="receptionist">Receptionist</option>
+                                        <option value="lab_tech">Lab Technician</option>
+                                        <option value="pharmacist">Pharmacist</option>
+                                        <option value="accountant">Accountant</option>
+                                        <option value="radiologist">Radiologist</option>
+                                        <option value="hr">HR Manager</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="department" class="form-label">Department</label>
+                                    <select class="form-select" id="department" name="department">
+                                        <option value="">Select Department</option>
+                                        {% for dept in departments %}
+                                        <option value="{{ dept.name }}">{{ dept.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-3" id="specialization_field" style="display: none;">
+                                    <label for="specialization" class="form-label">Specialization</label>
+                                    <input type="text" class="form-control" id="specialization" name="specialization"
+                                        placeholder="e.g., Cardiology, Neurology">
+                                </div>
+
+                                <div class="mb-3" id="license_field" style="display: none;">
+                                    <label for="license_number" class="form-label">License Number</label>
+                                    <input type="text" class="form-control" id="license_number" name="license_number">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="hire_date" class="form-label">Hire Date</label>
+                                    <input type="date" class="form-control" id="hire_date" name="hire_date">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="salary" class="form-label">Salary</label>
+                                    <input type="number" class="form-control" id="salary" name="salary" step="0.01"
+                                        placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shift Information -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h5 class="mb-3">Shift Information (Optional)</h5>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="shift_start" class="form-label">Shift Start Time</label>
+                                    <input type="time" class="form-control" id="shift_start" name="shift_start">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="shift_end" class="form-label">Shift End Time</label>
+                                    <input type="time" class="form-control" id="shift_end" name="shift_end">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-user-plus"></i> Add Staff Member
+                                </button>
+                                <a href="{{ url_for('staff_management') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Role Descriptions</h5>
+                </div>
+                <div class="card-body">
+                    <div id="role-description">
+                        <p class="text-muted">Select a role to see description and permissions</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Password Requirements</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Minimum 6 characters</li>
+                        <li><i class="fas fa-info text-info"></i> User can change password after first login</li>
+                        <li><i class="fas fa-shield-alt text-warning"></i> Passwords are securely hashed</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const roleDescriptions = {
+        'doctor': {
+            title: 'Doctor',
+            description: 'Can access patient records, create prescriptions, order lab tests, manage admissions and discharges.',
+            permissions: ['View/Edit EHR', 'Prescribe Medications', 'Order Tests', 'Admit/Discharge Patients']
+        },
+        'nurse': {
+            title: 'Nurse',
+            description: 'Can view patient records, assist with patient care, manage ward activities.',
+            permissions: ['View EHR', 'Patient Care', 'Ward Management', 'Vital Signs']
+        },
+        'receptionist': {
+            title: 'Receptionist',
+            description: 'Handles patient registration, appointment scheduling, billing, and front desk operations.',
+            permissions: ['Patient Registration', 'Appointment Scheduling', 'Billing', 'Front Desk']
+        },
+        'lab_tech': {
+            title: 'Lab Technician',
+            description: 'Processes lab orders, enters test results, manages laboratory operations.',
+            permissions: ['Lab Orders', 'Test Results', 'Sample Management', 'Lab Reports']
+        },
+        'pharmacist': {
+            title: 'Pharmacist',
+            description: 'Manages pharmacy operations, dispenses medications, maintains inventory.',
+            permissions: ['Medicine Dispensing', 'Inventory Management', 'Prescription Review', 'Drug Information']
+        },
+        'accountant': {
+            title: 'Accountant',
+            description: 'Handles financial operations, billing, payments, and financial reporting.',
+            permissions: ['Financial Management', 'Billing', 'Payments', 'Financial Reports']
+        },
+        'radiologist': {
+            title: 'Radiologist',
+            description: 'Reviews imaging studies, provides radiology reports and interpretations.',
+            permissions: ['Imaging Review', 'Radiology Reports', 'Image Interpretation', 'Consultation']
+        },
+        'hr': {
+            title: 'HR Manager',
+            description: 'Manages human resources, staff records, attendance, and HR policies.',
+            permissions: ['Staff Management', 'Attendance', 'HR Policies', 'Employee Records']
+        }
+    };
+
+    function toggleSpecialization() {
+        const role = document.getElementById('role').value;
+        const specializationField = document.getElementById('specialization_field');
+        const licenseField = document.getElementById('license_field');
+        const roleDescDiv = document.getElementById('role-description');
+
+        // Show/hide specialization field for doctors
+        if (role === 'doctor' || role === 'radiologist') {
+            specializationField.style.display = 'block';
+            licenseField.style.display = 'block';
+        } else {
+            specializationField.style.display = 'none';
+            licenseField.style.display = 'none';
+        }
+
+        // Update role description
+        if (role && roleDescriptions[role]) {
+            const roleInfo = roleDescriptions[role];
+            roleDescDiv.innerHTML = `
+            <h6>${roleInfo.title}</h6>
+            <p>${roleInfo.description}</p>
+            <h6>Permissions:</h6>
+            <ul>
+                ${roleInfo.permissions.map(perm => `<li>${perm}</li>`).join('')}
+            </ul>
+        `;
+        } else {
+            roleDescDiv.innerHTML = '<p class="text-muted">Select a role to see description and permissions</p>';
+        }
+    }
+
+    // Set default hire date to today
+    document.addEventListener('DOMContentLoaded', function () {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('hire_date').value = today;
+    });
+
+    // Username generation from full name
+    document.getElementById('full_name').addEventListener('blur', function () {
+        const fullName = this.value.toLowerCase().replace(/\s+/g, '');
+        const usernameField = document.getElementById('username');
+        if (!usernameField.value && fullName) {
+            usernameField.value = fullName;
+        }
+    });
+</script>
+{% endblock %}

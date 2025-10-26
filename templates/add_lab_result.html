@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Add Lab Result{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Add Lab Result</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Order Information</h6>
+                            <p><strong>Order ID:</strong> {{ order.id }}</p>
+                            <p><strong>Patient:</strong> {{ order.patient.first_name }} {{ order.patient.last_name }}
+                            </p>
+                            <p><strong>Test:</strong> {{ order.test.test_name }}</p>
+                            <p><strong>Order Date:</strong> {{ order.order_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Test Details</h6>
+                            <p><strong>Test Code:</strong> {{ order.test.test_code }}</p>
+                            <p><strong>Category:</strong> {{ order.test.category }}</p>
+                            <p><strong>Normal Range:</strong> {{ order.test.normal_range }}</p>
+                            <p><strong>Priority:</strong>
+                                <span class="badge bg-{{ 'danger' if order.priority == 'urgent' else 'info' }}">
+                                    {{ order.priority.title() }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="result_value" class="form-label">Result Value *</label>
+                                    <input type="text" class="form-control" id="result_value" name="result_value"
+                                        required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="result_unit" class="form-label">Unit</label>
+                                    <input type="text" class="form-control" id="result_unit" name="result_unit"
+                                        placeholder="mg/dL, mmol/L, etc.">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="reference_range" class="form-label">Reference Range</label>
+                                    <input type="text" class="form-control" id="reference_range" name="reference_range"
+                                        value="{{ order.test.normal_range }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Result Status *</label>
+                                    <select class="form-select" id="status" name="status" required>
+                                        <option value="">Select Status</option>
+                                        <option value="normal">Normal</option>
+                                        <option value="abnormal">Abnormal</option>
+                                        <option value="critical">Critical</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="comments" class="form-label">Comments</label>
+                                    <textarea class="form-control" id="comments" name="comments" rows="4"
+                                        placeholder="Additional observations, recommendations, etc."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Note:</strong> Once submitted, this result will be marked as completed and
+                                    the patient/doctor will be notified.
+                                </div>
+
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-check"></i> Submit Result
+                                </button>
+                                <a href="{{ url_for('lab_orders') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Patient History</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Previous {{ order.test.test_name }} Results</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Value</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Previous results would be loaded here -->
+                                <tr>
+                                    <td colspan="3" class="text-muted text-center">No previous results</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Quick Reference</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Normal Ranges</h6>
+                    <small class="text-muted">
+                        <p><strong>{{ order.test.test_name }}:</strong><br>
+                            {{ order.test.normal_range }}</p>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-determine status based on result value and reference range
+    document.getElementById('result_value').addEventListener('blur', function () {
+        const resultValue = parseFloat(this.value);
+        const referenceRange = document.getElementById('reference_range').value;
+        const statusSelect = document.getElementById('status');
+
+        if (resultValue && referenceRange) {
+            // Simple logic - in real implementation, this would be more sophisticated
+            // This is just a placeholder for demonstration
+            if (referenceRange.includes('-')) {
+                const [min, max] = referenceRange.split('-').map(v => parseFloat(v.trim()));
+                if (resultValue >= min && resultValue <= max) {
+                    statusSelect.value = 'normal';
+                } else {
+                    statusSelect.value = 'abnormal';
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

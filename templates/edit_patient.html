@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Patient - {{ get_text('title') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2>
+                <i class="fas fa-user-edit text-primary"></i>
+                Edit Patient
+            </h2>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{{ url_for('patients') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Patients
+            </a>
+        </div>
+    </div>
+    
+    <!-- Patient Form -->
+    <form method="POST" id="patientForm">
+        <div class="row g-4">
+            <!-- Personal Information -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user"></i> Personal Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name *</label>
+                                <input type="text" class="form-control" name="first_name" value="{{ patient.first_name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" name="last_name" value="{{ patient.last_name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" name="date_of_birth" value="{{ patient.date_of_birth.strftime('%Y-%m-%d') if patient.date_of_birth else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Gender</label>
+                                <select class="form-select" name="gender">
+                                    <option value="">Select Gender</option>
+                                    <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
+                                    <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
+                                    <option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Address</label>
+                                <textarea class="form-control" name="address" rows="3">{{ patient.address or '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Information -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-phone"></i> Contact Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number *</label>
+                                <input type="tel" class="form-control" name="phone" value="{{ patient.phone }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email" value="{{ patient.email or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Emergency Contact</label>
+                                <input type="text" class="form-control" name="emergency_contact" value="{{ patient.emergency_contact or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Emergency Phone</label>
+                                <input type="tel" class="form-control" name="emergency_phone" value="{{ patient.emergency_phone or '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Medical Information -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-heartbeat"></i> Medical Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Blood Group</label>
+                                <select class="form-select" name="blood_group">
+                                    <option value="">Select Blood Group</option>
+                                    <option value="A+" {% if patient.blood_group == 'A+' %}selected{% endif %}>A+</option>
+                                    <option value="A-" {% if patient.blood_group == 'A-' %}selected{% endif %}>A-</option>
+                                    <option value="B+" {% if patient.blood_group == 'B+' %}selected{% endif %}>B+</option>
+                                    <option value="B-" {% if patient.blood_group == 'B-' %}selected{% endif %}>B-</option>
+                                    <option value="AB+" {% if patient.blood_group == 'AB+' %}selected{% endif %}>AB+</option>
+                                    <option value="AB-" {% if patient.blood_group == 'AB-' %}selected{% endif %}>AB-</option>
+                                    <option value="O+" {% if patient.blood_group == 'O+' %}selected{% endif %}>O+</option>
+                                    <option value="O-" {% if patient.blood_group == 'O-' %}selected{% endif %}>O-</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Allergies</label>
+                                <textarea class="form-control" name="allergies" rows="2">{{ patient.allergies or '' }}</textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Medical History</label>
+                                <textarea class="form-control" name="medical_history" rows="3">{{ patient.medical_history or '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Additional Information -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle"></i> Additional Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">City</label>
+                                <input type="text" class="form-control" name="city" value="{{ patient.city or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">State</label>
+                                <input type="text" class="form-control" name="state" value="{{ patient.state or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">ZIP Code</label>
+                                <input type="text" class="form-control" name="zip_code" value="{{ patient.zip_code or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Country</label>
+                                <input type="text" class="form-control" name="country" value="{{ patient.country or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Marital Status</label>
+                                <select class="form-select" name="marital_status">
+                                    <option value="">Select Status</option>
+                                    <option value="Single" {% if patient.marital_status == 'Single' %}selected{% endif %}>Single</option>
+                                    <option value="Married" {% if patient.marital_status == 'Married' %}selected{% endif %}>Married</option>
+                                    <option value="Divorced" {% if patient.marital_status == 'Divorced' %}selected{% endif %}>Divorced</option>
+                                    <option value="Widowed" {% if patient.marital_status == 'Widowed' %}selected{% endif %}>Widowed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Occupation</label>
+                                <input type="text" class="form-control" name="occupation" value="{{ patient.occupation or '' }}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Emergency Relation</label>
+                                <input type="text" class="form-control" name="emergency_relation" value="{{ patient.emergency_relation or '' }}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">ID Proof Type</label>
+                                <select class="form-select" name="id_proof_type">
+                                    <option value="">Select Type</option>
+                                    <option value="Driver's License" {% if patient.id_proof_type == "Driver's License" %}selected{% endif %}>Driver's License</option>
+                                    <option value="Passport" {% if patient.id_proof_type == 'Passport' %}selected{% endif %}>Passport</option>
+                                    <option value="National ID" {% if patient.id_proof_type == 'National ID' %}selected{% endif %}>National ID</option>
+                                    <option value="Other" {% if patient.id_proof_type == 'Other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">ID Proof Number</label>
+                                <input type="text" class="form-control" name="id_proof_number" value="{{ patient.id_proof_number or '' }}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Insurance Provider</label>
+                                <input type="text" class="form-control" name="insurance_provider" value="{{ patient.insurance_provider or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Insurance Number</label>
+                                <input type="text" class="form-control" name="insurance_number" value="{{ patient.insurance_number or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Insurance Expiry</label>
+                                <input type="date" class="form-control" name="insurance_expiry" value="{{ patient.insurance_expiry.strftime('%Y-%m-%d') if patient.insurance_expiry else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-save"></i> Update Patient
+                                </button>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="{{ url_for('patient_ehr', patient_id=patient.id) }}" class="btn btn-info btn-lg w-100">
+                                    <i class="fas fa-file-medical"></i> View Medical Records
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="reset" class="btn btn-outline-secondary btn-lg w-100">
+                                    <i class="fas fa-undo"></i> Reset Form
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Form validation and submission
+document.getElementById('patientForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+    submitBtn.disabled = true;
+    
+    // Re-enable button after form submission (in case of validation errors)
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 3000);
+});
+
+// Auto-format phone numbers
+document.querySelectorAll('input[type="tel"]').forEach(input => {
+    input.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 6) {
+            value = value.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+        } else if (value.length >= 3) {
+            value = value.replace(/(\d{3})(\d{3})/, '($1) $2');
+        }
+        e.target.value = value;
+    });
+});
+
+// Calculate age from date of birth
+document.querySelector('input[name="date_of_birth"]').addEventListener('change', function(e) {
+    if (e.target.value) {
+        const birthDate = new Date(e.target.value);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        
+        // You could display the calculated age somewhere if needed
+        console.log('Patient age:', age);
+    }
+});
+</script>
+{% endblock %}

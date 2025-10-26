@@ -1,0 +1,384 @@
+{% extends "base.html" %} {% block title %}Schedule Appointment - {{
+get_text('title') }}{% endblock %} {% block content %}
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <h2>
+        <i class="fas fa-calendar-plus text-success"></i>
+        Schedule Appointment
+      </h2>
+    </div>
+    <div class="col-md-6 text-end">
+      <a href="{{ url_for('appointments') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Appointments
+      </a>
+    </div>
+  </div>
+
+  <!-- Appointment Form -->
+  <form method="POST" id="appointmentForm">
+    <div class="row g-4">
+      <!-- Patient Selection -->
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-user"></i> Patient Information
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Select Patient *</label>
+              <select
+                class="form-select"
+                name="patient_id"
+                required
+                id="patientSelect"
+              >
+                <option value="">Choose a patient...</option>
+                {% for patient in patients %}
+                <option
+                  value="{{ patient.id }}"
+                  data-phone="{{ patient.phone }}"
+                  data-email="{{ patient.email or '' }}"
+                >
+                  {{ patient.first_name }} {{ patient.last_name }} ({{
+                  patient.patient_id }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div id="patientInfo" class="d-none">
+              <div class="alert alert-info">
+                <h6 class="alert-heading">Patient Details:</h6>
+                <p class="mb-1">
+                  <strong>Phone:</strong> <span id="patientPhone"></span>
+                </p>
+                <p class="mb-0">
+                  <strong>Email:</strong> <span id="patientEmail"></span>
+                </p>
+              </div>
+            </div>
+
+            <div class="text-center">
+              <p class="text-muted">Don't see the patient?</p>
+              <a
+                href="{{ url_for('add_patient') }}"
+                class="btn btn-outline-primary"
+              >
+                <i class="fas fa-user-plus"></i> Add New Patient
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Doctor Selection -->
+      <div class="col-lg-6">
+        <div class="card h-100">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-user-md"></i> Doctor Information
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Select Doctor *</label>
+              <select class="form-select" name="doctor_id" required>
+                <option value="">Choose a doctor...</option>
+                {% for doctor in doctors %}
+                <option value="{{ doctor.id }}">
+                  {{ doctor.full_name }} - {{ doctor.department or 'General' }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="alert alert-warning">
+              <i class="fas fa-info-circle"></i>
+              <strong>Note:</strong> Doctor availability will be checked when
+              scheduling.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Appointment Details -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-calendar-alt"></i> Appointment Details
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Appointment Date & Time *</label>
+                <input
+                  type="datetime-local"
+                  class="form-control"
+                  name="appointment_datetime"
+                  required
+                  min="{{ min_datetime }}"
+                />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Appointment Type *</label>
+                <select
+                  class="form-select"
+                  name="appointment_type"
+                  required
+                  id="appointmentType"
+                >
+                  <option value="">Select Type</option>
+                  <option value="consultation">Consultation</option>
+                  <option value="follow-up">Follow-up</option>
+                  <option value="telemedicine">Telemedicine</option>
+                  <option value="emergency">Emergency</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Notes</label>
+                <textarea
+                  class="form-control"
+                  name="notes"
+                  rows="3"
+                  placeholder="Any special instructions or notes..."
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telemedicine Options -->
+      <div class="col-lg-4">
+        <div class="card" id="telemedicineCard" style="display: none">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-video"></i> Telemedicine Options
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Platform</label>
+              <select class="form-select" name="telemedicine_platform">
+                <option value="google-meet">Google Meet</option>
+                <option value="zoom">Zoom</option>
+                <option value="teams">Microsoft Teams</option>
+              </select>
+            </div>
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i>
+              Meeting link will be generated automatically and sent to patient.
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card mt-3">
+          <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-clock"></i> Quick Schedule</h5>
+          </div>
+          <div class="card-body">
+            <div class="d-grid gap-2">
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                onclick="setQuickTime('today')"
+              >
+                Today 2:00 PM
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                onclick="setQuickTime('tomorrow')"
+              >
+                Tomorrow 10:00 AM
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                onclick="setQuickTime('next-week')"
+              >
+                Next Week 9:00 AM
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <button type="submit" class="btn btn-success btn-lg w-100">
+                  <i class="fas fa-calendar-check"></i> Schedule Appointment
+                </button>
+              </div>
+              <div class="col-md-3">
+                <button
+                  type="button"
+                  class="btn btn-outline-info btn-lg w-100"
+                  onclick="scheduleAndNotify()"
+                >
+                  <i class="fas fa-bell"></i> Schedule & Notify
+                </button>
+              </div>
+              <div class="col-md-3">
+                <button
+                  type="reset"
+                  class="btn btn-outline-secondary btn-lg w-100"
+                >
+                  <i class="fas fa-undo"></i> Reset Form
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Show/hide telemedicine options
+  document
+    .getElementById("appointmentType")
+    .addEventListener("change", function () {
+      const telemedicineCard = document.getElementById("telemedicineCard");
+      if (this.value === "telemedicine") {
+        telemedicineCard.style.display = "block";
+      } else {
+        telemedicineCard.style.display = "none";
+      }
+    });
+
+  // Show patient info when selected
+  document
+    .getElementById("patientSelect")
+    .addEventListener("change", function () {
+      const patientInfo = document.getElementById("patientInfo");
+      const patientPhone = document.getElementById("patientPhone");
+      const patientEmail = document.getElementById("patientEmail");
+
+      if (this.value) {
+        const selectedOption = this.options[this.selectedIndex];
+        patientPhone.textContent = selectedOption.dataset.phone;
+        patientEmail.textContent =
+          selectedOption.dataset.email || "Not provided";
+        patientInfo.classList.remove("d-none");
+      } else {
+        patientInfo.classList.add("d-none");
+      }
+    });
+
+  // Quick time setting functions
+  function setQuickTime(option) {
+    const datetimeInput = document.querySelector(
+      'input[name="appointment_datetime"]'
+    );
+    const now = new Date();
+    let appointmentTime;
+
+    switch (option) {
+      case "today":
+        appointmentTime = new Date(now);
+        appointmentTime.setHours(14, 0, 0, 0); // 2:00 PM
+        break;
+      case "tomorrow":
+        appointmentTime = new Date(now);
+        appointmentTime.setDate(now.getDate() + 1);
+        appointmentTime.setHours(10, 0, 0, 0); // 10:00 AM
+        break;
+      case "next-week":
+        appointmentTime = new Date(now);
+        appointmentTime.setDate(now.getDate() + 7);
+        appointmentTime.setHours(9, 0, 0, 0); // 9:00 AM
+        break;
+    }
+
+    // Format for datetime-local input
+    const year = appointmentTime.getFullYear();
+    const month = String(appointmentTime.getMonth() + 1).padStart(2, "0");
+    const day = String(appointmentTime.getDate()).padStart(2, "0");
+    const hours = String(appointmentTime.getHours()).padStart(2, "0");
+    const minutes = String(appointmentTime.getMinutes()).padStart(2, "0");
+
+    datetimeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  // Form submission
+  document
+    .getElementById("appointmentForm")
+    .addEventListener("submit", function (e) {
+      const submitBtn = this.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+
+      submitBtn.innerHTML =
+        '<i class="fas fa-spinner fa-spin"></i> Scheduling...';
+      submitBtn.disabled = true;
+
+      // Re-enable button after form submission
+      setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }, 3000);
+    });
+
+  // Schedule and notify function
+  function scheduleAndNotify() {
+    const form = document.getElementById("appointmentForm");
+    const formData = new FormData(form);
+
+    // Add notification flag
+    formData.append("send_notification", "true");
+
+    const submitBtn = event.target;
+    const originalText = submitBtn.innerHTML;
+
+    submitBtn.innerHTML =
+      '<i class="fas fa-spinner fa-spin"></i> Scheduling...';
+    submitBtn.disabled = true;
+
+    fetch(form.action, {
+      method: "POST",
+      body: formData,
+    })
+      .then((response) => {
+        if (response.ok) {
+          alert("Appointment scheduled and notification sent!");
+          window.location.href = '{{ url_for("appointments") }}';
+        } else {
+          alert("Error scheduling appointment. Please try again.");
+        }
+      })
+      .catch((error) => {
+        alert("Error scheduling appointment. Please try again.");
+      })
+      .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      });
+  }
+
+  // Set minimum date to today
+  document.addEventListener("DOMContentLoaded", function () {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+
+    document.querySelector(
+      'input[name="appointment_datetime"]'
+    ).min = `${year}-${month}-${day}T${hours}:${minutes}`;
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Add Admission{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-bed text-warning"></i> New Patient Admission</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" hx-post="{{ url_for('add_admission') }}" hx-target="#admission-form-result">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="patient_id" class="form-label">Patient *</label>
+                                    <select class="form-select" id="patient_id" name="patient_id" required
+                                        hx-get="/api/patient-info" hx-target="#patient-info" hx-trigger="change">
+                                        <option value="">Select Patient</option>
+                                        {% for patient in patients %}
+                                        <option value="{{ patient.id }}">{{ patient.patient_id }} - {{
+                                            patient.first_name }} {{ patient.last_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="doctor_id" class="form-label">Attending Doctor *</label>
+                                    <select class="form-select" id="doctor_id" name="doctor_id" required>
+                                        <option value="">Select Doctor</option>
+                                        {% for doctor in doctors %}
+                                        <option value="{{ doctor.id }}">{{ doctor.full_name }} - {{
+                                            doctor.specialization or 'General' }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="bed_id" class="form-label">Bed Assignment *</label>
+                                    <select class="form-select" id="bed_id" name="bed_id" required>
+                                        <option value="">Select Available Bed</option>
+                                        {% for bed in available_beds %}
+                                        <option value="{{ bed.id }}">{{ bed.ward.name }} - Bed {{ bed.bed_number }} ({{
+                                            bed.bed_type }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="admission_type" class="form-label">Admission Type *</label>
+                                    <select class="form-select" id="admission_type" name="admission_type" required>
+                                        <option value="">Select Type</option>
+                                        <option value="emergency">Emergency</option>
+                                        <option value="planned">Planned</option>
+                                        <option value="transfer">Transfer</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="reason" class="form-label">Reason for Admission *</label>
+                                    <textarea class="form-control" id="reason" name="reason" rows="3" required
+                                        placeholder="Brief description of admission reason"></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="diagnosis" class="form-label">Preliminary Diagnosis</label>
+                                    <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3"
+                                        placeholder="Initial diagnosis or suspected condition"></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label">Additional Notes</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="2"
+                                        placeholder="Any additional information"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="admission-form-result"></div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-bed"></i> Admit Patient
+                                </button>
+                                <a href="{{ url_for('admissions') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Patient Information</h5>
+                </div>
+                <div class="card-body" id="patient-info">
+                    <p class="text-muted">Select a patient to view details</p>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-bed"></i> Bed Availability</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-success">{{ available_beds|length }}</h4>
+                            <small>Available</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-warning">{{ total_beds - available_beds|length }}</h4>
+                            <small>Occupied</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-fill admission date and time
+    document.addEventListener('DOMContentLoaded', function () {
+        const now = new Date();
+        const admissionDate = now.toISOString().slice(0, 16);
+
+        // If there's an admission date field, set it to now
+        const dateField = document.querySelector('input[name="admission_date"]');
+        if (dateField) {
+            dateField.value = admissionDate;
+        }
+    });
+
+    // Bed availability checker
+    function checkBedAvailability() {
+        const bedSelect = document.getElementById('bed_id');
+        const selectedBed = bedSelect.value;
+
+        if (selectedBed) {
+            // In a real implementation, this would check real-time availability
+            console.log('Checking availability for bed:', selectedBed);
+        }
+    }
+</script>
+{% endblock %}

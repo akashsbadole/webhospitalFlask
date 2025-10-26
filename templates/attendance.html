@@ -1,0 +1,389 @@
+{% extends "base.html" %} {% block title %}Attendance - {{ get_text('title')
+}}{% endblock %} {% block content %}
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <h2>
+        <i class="fas fa-clock text-secondary"></i>
+        {{ get_text('attendance') }}
+      </h2>
+    </div>
+    <div class="col-md-6 text-end">
+      <div class="btn-group">
+        <button class="btn btn-outline-success" onclick="markAllPresent()">
+          <i class="fas fa-check-double"></i> Mark All Present
+        </button>
+        <button class="btn btn-outline-info" onclick="exportAttendance()">
+          <i class="fas fa-download"></i> Export
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Date Filter -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label">Select Date</label>
+              <input
+                type="date"
+                class="form-control"
+                name="date"
+                value="{{ date_filter }}"
+              />
+            </div>
+            <div class="col-md-4">
+              <div class="d-grid d-md-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-calendar-alt"></i> View Date
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  onclick="setToday()"
+                >
+                  <i class="fas fa-calendar-day"></i> Today
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4 text-end">
+              <div class="text-muted">
+                <small
+                  >Viewing attendance for:
+                  <strong>{{ date_filter }}</strong></small
+                >
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Summary -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-3">
+      <div class="card stats-card">
+        <div class="card-body text-center">
+          <div class="stats-icon bg-success mx-auto mb-2">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <h4 class="text-success">
+            {{
+            attendance_data|selectattr('attendance')|selectattr('attendance.status',
+            'equalto', 'present')|list|length }}
+          </h4>
+          <p class="text-muted mb-0">Present</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stats-card">
+        <div class="card-body text-center">
+          <div class="stats-icon bg-danger mx-auto mb-2">
+            <i class="fas fa-user-times"></i>
+          </div>
+          <h4 class="text-danger">
+            {{
+            attendance_data|selectattr('attendance')|selectattr('attendance.status',
+            'equalto', 'absent')|list|length }}
+          </h4>
+          <p class="text-muted mb-0">Absent</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stats-card">
+        <div class="card-body text-center">
+          <div class="stats-icon bg-warning mx-auto mb-2">
+            <i class="fas fa-user-clock"></i>
+          </div>
+          <h4 class="text-warning">
+            {{
+            attendance_data|selectattr('attendance')|selectattr('attendance.status',
+            'equalto', 'late')|list|length }}
+          </h4>
+          <p class="text-muted mb-0">Late</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stats-card">
+        <div class="card-body text-center">
+          <div class="stats-icon bg-info mx-auto mb-2">
+            <i class="fas fa-users"></i>
+          </div>
+          <h4 class="text-info">{{ attendance_data|length }}</h4>
+          <p class="text-muted mb-0">Total Staff</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Table -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-list"></i> Staff Attendance - {{ date_filter }}
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          {% if attendance_data %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Staff Member</th>
+                  <th>Department</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for data in attendance_data %}
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <div class="me-3">
+                        {% if data.user.role == 'doctor' %}
+                        <i class="fas fa-user-md fa-2x text-primary"></i>
+                        {% elif data.user.role == 'nurse' %}
+                        <i class="fas fa-user-nurse fa-2x text-info"></i>
+                        {% else %}
+                        <i class="fas fa-user fa-2x text-secondary"></i>
+                        {% endif %}
+                      </div>
+                      <div>
+                        <strong>{{ data.user.full_name }}</strong>
+                        <br /><small class="text-muted"
+                          >{{ data.user.role.title() }}</small
+                        >
+                      </div>
+                    </div>
+                  </td>
+                  <td>{{ data.user.department or 'General' }}</td>
+                  <td>
+                    {% if data.attendance and data.attendance.check_in %}
+                    <span class="text-success">
+                      <i class="fas fa-clock"></i>
+                      {{ data.attendance.check_in.strftime('%I:%M %p') }}
+                    </span>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if data.attendance and data.attendance.check_out %}
+                    <span class="text-info">
+                      <i class="fas fa-clock"></i>
+                      {{ data.attendance.check_out.strftime('%I:%M %p') }}
+                    </span>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if data.attendance %} {% set status_colors = { 'present':
+                    'success', 'absent': 'danger', 'late': 'warning',
+                    'half-day': 'info' } %}
+                    <span
+                      class="badge bg-{{ status_colors.get(data.attendance.status, 'secondary') }}"
+                    >
+                      {{ data.attendance.status.title() }}
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary">Not Marked</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <button
+                      class="btn btn-sm btn-outline-primary"
+                      onclick="markAttendance({{ data.user.id }}, '{{ data.user.full_name }}')"
+                    >
+                      <i class="fas fa-edit"></i> Mark
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5">
+            <i class="fas fa-users fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No staff members found</h4>
+            <p class="text-muted">
+              No staff members are available for attendance tracking.
+            </p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mark Attendance Modal -->
+<div class="modal fade" id="attendanceModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-clock text-primary"></i> Mark Attendance
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <form method="POST" action="{{ url_for('mark_attendance') }}">
+        <div class="modal-body">
+          <input type="hidden" name="user_id" id="attendanceUserId" />
+          <input type="hidden" name="date" value="{{ date_filter }}" />
+
+          <div class="mb-3">
+            <label class="form-label">Staff Member</label>
+            <input
+              type="text"
+              class="form-control"
+              id="attendanceUserName"
+              readonly
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Status *</label>
+            <select class="form-select" name="status" required>
+              <option value="">Select Status</option>
+              <option value="present">Present</option>
+              <option value="absent">Absent</option>
+              <option value="late">Late</option>
+              <option value="half-day">Half Day</option>
+            </select>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Check In Time</label>
+              <input type="time" class="form-control" name="check_in" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Check Out Time</label>
+              <input type="time" class="form-control" name="check_out" />
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <label class="form-label">Notes</label>
+            <textarea
+              class="form-control"
+              name="notes"
+              rows="2"
+              placeholder="Any additional notes..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Save Attendance
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function markAttendance(userId, userName) {
+      document.getElementById('attendanceUserId').value = userId;
+      document.getElementById('attendanceUserName').value = userName;
+
+      const modal = new bootstrap.Modal(document.getElementById('attendanceModal'));
+      modal.show();
+  }
+
+  function setToday() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+
+      document.querySelector('input[name="date"]').value = `${year}-${month}-${day}`;
+      document.querySelector('form').submit();
+  }
+
+  function markAllPresent() {
+      if (confirm('Mark all staff as present for {{ date_filter }}?')) {
+          // In a real application, this would make an API call
+          alert('All staff marked as present!');
+          location.reload();
+      }
+  }
+
+  function exportAttendance() {
+      // Create CSV content
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Staff Member,Department,Check In,Check Out,Status,Notes\n";
+
+      // Add attendance data
+      {% for data in attendance_data %}
+      csvContent += `"{{ data.user.full_name }}","{{ data.user.department or 'General' }}",
+          {% if data.attendance and data.attendance.check_in %}"{{ data.attendance.check_in.strftime('%I:%M %p') }}"{% else %}"-"{% endif %},
+          {% if data.attendance and data.attendance.check_out %}"{{ data.attendance.check_out.strftime('%I:%M %p') }}"{% else %}"-"{% endif %},
+          {% if data.attendance %}"{{ data.attendance.status }}"{% else %}"Not Marked"{% endif %},
+          "{{ data.attendance.notes if data.attendance else '' }}"\n`;
+      {% endfor %}
+
+      // Create download link
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "attendance_{{ date_filter }}.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  }
+
+  // Auto-fill current time for check-in when status is selected
+  document.querySelector('select[name="status"]').addEventListener('change', function() {
+      if (this.value === 'present' || this.value === 'late') {
+          const now = new Date();
+          const hours = String(now.getHours()).padStart(2, '0');
+          const minutes = String(now.getMinutes()).padStart(2, '0');
+
+          const checkInInput = document.querySelector('input[name="check_in"]');
+          if (!checkInInput.value) {
+              checkInInput.value = `${hours}:${minutes}`;
+          }
+      }
+  });
+
+  // Set default date to today
+  document.addEventListener('DOMContentLoaded', function() {
+      const dateInput = document.querySelector('input[name="date"]');
+      if (!dateInput.value) {
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          dateInput.value = `${year}-${month}-${day}`;
+      }
+  });
+</script>
+{% endblock %}

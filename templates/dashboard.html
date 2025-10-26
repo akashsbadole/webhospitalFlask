@@ -1,0 +1,819 @@
+{% extends "base.html" %} {% block title %}{{ get_text('dashboard') }} - {{
+get_text('title') }}{% endblock %} {% block extra_css %}
+<style>
+  .welcome-header {
+    background: linear-gradient(
+      135deg,
+      var(--primary-600) 0%,
+      var(--primary-800) 50%,
+      var(--primary-900) 100%
+    );
+    color: white;
+    border-radius: var(--border-radius-xl);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .welcome-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 70%
+    );
+    transform: translate(100px, -100px);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+
+  .activity-card {
+    height: 400px;
+  }
+
+  .activity-card .card-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .activity-list {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: var(--gray-500);
+  }
+
+  .empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="container-fluid fade-in">
+  <!-- Welcome Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card welcome-header">
+        <div class="card-body p-4">
+          <div class="row align-items-center">
+            <div class="col-md-8">
+              <h1 class="mb-2 font-bold">
+                <i class="fas fa-tachometer-alt me-3"></i>
+                {{ get_text('welcome') }}, {{ current_user.full_name }}!
+              </h1>
+              <p class="mb-0 text-lg opacity-90">
+                <i class="fas fa-user-tag me-2"></i>
+                {{ current_user.role.title() }} {% if current_user.department %}
+                | <i class="fas fa-building me-1"></i>{{ current_user.department
+                }} {% endif %}
+              </p>
+            </div>
+            <div class="col-md-4 text-end">
+              <div class="text-xl mb-2">
+                <i class="fas fa-calendar-alt me-2"></i>
+                <span id="currentDate" class="font-semibold"></span>
+              </div>
+              <div class="text-lg opacity-90">
+                <i class="fas fa-clock me-2"></i>
+                <span id="currentTime" class="font-mono"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Overview -->
+  <div class="stats-grid">
+    <!-- Total Patients -->
+    <div class="card card-stats">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="stats-icon stats-icon-primary me-3">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="stats-number">{{ total_patients }}</div>
+            <div class="stats-label">
+              {{ get_text('total') }} {{ get_text('patients') }}
+            </div>
+            <div class="stats-change positive">
+              <i class="fas fa-arrow-up"></i> +12% {{ get_text('this_month') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today's Appointments -->
+    <div class="card card-stats">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="stats-icon stats-icon-success me-3">
+            <i class="fas fa-calendar-check"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="stats-number">{{ today_appointments }}</div>
+            <div class="stats-label">
+              {{ get_text('today') }} {{ get_text('appointments') }}
+            </div>
+            <div class="stats-change positive">
+              <i class="fas fa-arrow-up"></i> +8% vs {{ get_text('yesterday') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today's Revenue -->
+    <div class="card card-stats">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="stats-icon stats-icon-info me-3">
+            <i class="fas fa-dollar-sign"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="stats-number">${{ "%.0f"|format(today_revenue) }}</div>
+            <div class="stats-label">{{ get_text('today') }} Revenue</div>
+            <div class="stats-change positive">
+              <i class="fas fa-arrow-up"></i> +15% vs {{ get_text('yesterday')
+              }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bed Occupancy -->
+    <div class="card card-stats">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="stats-icon stats-icon-warning me-3">
+            <i class="fas fa-bed"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="stats-number">{{ "%.0f"|format(occupancy_rate) }}%</div>
+            <div class="stats-label">Bed {{ get_text('occupancy_rate') }}</div>
+            <div class="text-sm text-muted">
+              {{ occupied_beds }}/{{ total_beds }} beds {{ get_text('occupied')
+              }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Lab Orders -->
+    <div class="card card-stats">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="stats-icon stats-icon-primary me-3">
+            <i class="fas fa-flask"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="stats-number">{{ pending_lab_orders }}</div>
+            <div class="stats-label">
+              {{ get_text('pending') }} {{ get_text('lab_orders') }}
+            </div>
+            {% if pending_lab_orders > 10 %}
+            <div class="stats-change negative">
+              <i class="fas fa-exclamation-triangle"></i> High Volume
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Bills -->
+    <div class="card card-stats">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="stats-icon stats-icon-danger me-3">
+            <i class="fas fa-file-invoice-dollar"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="stats-number">{{ pending_bills }}</div>
+            <div class="stats-label">{{ get_text('pending') }} Bills</div>
+            {% if pending_bills > 5 %}
+            <div class="stats-change negative">
+              <i class="fas fa-exclamation-triangle"></i> Needs Attention
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Low Stock Medicines -->
+    <div class="card card-stats">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="stats-icon stats-icon-warning me-3">
+            <i class="fas fa-pills"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="stats-number">{{ low_stock_medicines }}</div>
+            <div class="stats-label">{{ get_text('low_stock_alert') }}</div>
+            {% if low_stock_medicines > 0 %}
+            <div class="stats-change negative">
+              <i class="fas fa-exclamation-triangle"></i> Reorder Required
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Critical Alerts -->
+    <div class="card card-stats">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="stats-icon stats-icon-danger me-3">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="stats-number">{{ critical_lab_results }}</div>
+            <div class="stats-label">Critical Alerts</div>
+            {% if critical_lab_results > 0 %}
+            <div class="stats-change negative">
+              <i class="fas fa-bell"></i> Immediate Action Required
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h4 class="mb-0 d-flex align-items-center">
+            <i class="fas fa-bolt text-warning me-2"></i>
+            Quick Actions
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="quick-actions-grid">
+            <a href="{{ url_for('add_patient') }}" class="btn btn-primary">
+              <i class="fas fa-user-plus"></i>
+              <span>{{ get_text('add_patient') }}</span>
+            </a>
+
+            <a href="{{ url_for('add_appointment') }}" class="btn btn-success">
+              <i class="fas fa-calendar-plus"></i>
+              <span>{{ get_text('schedule_new') }}</span>
+            </a>
+
+            <a href="{{ url_for('telemedicine') }}" class="btn btn-info">
+              <i class="fas fa-video"></i>
+              <span>{{ get_text('telemedicine') }}</span>
+            </a>
+
+            <a href="{{ url_for('enquiries') }}" class="btn btn-warning">
+              <i class="fas fa-envelope"></i>
+              <span>{{ get_text('enquiries') }}</span>
+            </a>
+
+            {% if current_user.role in ['admin', 'hr'] %}
+            <a href="{{ url_for('attendance') }}" class="btn btn-secondary">
+              <i class="fas fa-clock"></i>
+              <span>{{ get_text('attendance') }}</span>
+            </a>
+            {% endif %} {% if current_user.role in ['admin', 'doctor', 'nurse']
+            %}
+            <a
+              href="{{ url_for('admissions') }}"
+              class="btn btn-outline-primary"
+            >
+              <i class="fas fa-bed"></i>
+              <span>{{ get_text('admissions') }}</span>
+            </a>
+            {% endif %} {% if current_user.role in ['admin', 'pharmacist'] %}
+            <a
+              href="{{ url_for('pharmacy_medicines') }}"
+              class="btn btn-outline-success"
+            >
+              <i class="fas fa-pills"></i>
+              <span>{{ get_text('pharmacy') }}</span>
+            </a>
+            {% endif %}
+
+            <button class="btn btn-outline-danger" onclick="syncOfflineData()">
+              <i class="fas fa-sync"></i>
+              <span>{{ get_text('sync_data') }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activities -->
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-user-plus text-primary"></i> Recent Patients
+          </h5>
+        </div>
+        <div class="card-body">
+          {% if recent_patients %}
+          <div class="list-group list-group-flush">
+            {% for patient in recent_patients %}
+            <div
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <h6 class="mb-1">
+                  {{ patient.first_name }} {{ patient.last_name }}
+                </h6>
+                <small class="text-muted">ID: {{ patient.patient_id }}</small>
+              </div>
+              <small class="text-muted"
+                >{{ patient.created_at.strftime('%m/%d') }}</small
+              >
+            </div>
+            {% endfor %}
+          </div>
+          <div class="text-center mt-3">
+            <a
+              href="{{ url_for('patients') }}"
+              class="btn btn-sm btn-outline-primary"
+              >View All</a
+            >
+          </div>
+          {% else %}
+          <div class="text-center text-muted py-4">
+            <i class="fas fa-users fa-3x mb-3 opacity-50"></i>
+            <p>No patients registered yet</p>
+            <a href="{{ url_for('add_patient') }}" class="btn btn-primary"
+              >Add First Patient</a
+            >
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-calendar-alt text-success"></i> Upcoming
+            Appointments
+          </h5>
+        </div>
+        <div class="card-body">
+          {% if upcoming_appointments %}
+          <div class="list-group list-group-flush">
+            {% for appointment in upcoming_appointments %}
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h6 class="mb-1">
+                    {{ appointment.patient.first_name }} {{
+                    appointment.patient.last_name }}
+                  </h6>
+                  <small class="text-muted">
+                    <i class="fas fa-user-md"></i> {{
+                    appointment.doctor.full_name }} </small
+                  ><br />
+                  <small class="text-muted">
+                    <i class="fas fa-calendar"></i> {{
+                    appointment.appointment_date.strftime('%m/%d %I:%M %p') }}
+                  </small>
+                </div>
+                <span
+                  class="badge bg-{{ 'info' if appointment.appointment_type == 'telemedicine' else 'primary' }}"
+                >
+                  {{ appointment.appointment_type.title() }}
+                </span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="text-center mt-3">
+            <a
+              href="{{ url_for('appointments') }}"
+              class="btn btn-sm btn-outline-success"
+              >View All</a
+            >
+          </div>
+          {% else %}
+          <div class="text-center text-muted py-4">
+            <i class="fas fa-calendar-alt fa-3x mb-3 opacity-50"></i>
+            <p>No upcoming appointments</p>
+            <a href="{{ url_for('add_appointment') }}" class="btn btn-success"
+              >Schedule Appointment</a
+            >
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-bed text-warning"></i> Current Admissions
+          </h5>
+        </div>
+        <div class="card-body">
+          {% if recent_admissions %}
+          <div class="list-group list-group-flush">
+            {% for admission in recent_admissions %}
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h6 class="mb-1">
+                    {{ admission.patient.first_name }} {{
+                    admission.patient.last_name }}
+                  </h6>
+                  <small class="text-muted">
+                    <i class="fas fa-bed"></i> {{ admission.bed.ward.name }} -
+                    {{ admission.bed.bed_number }} </small
+                  ><br />
+                  <small class="text-muted">
+                    <i class="fas fa-calendar"></i> {{
+                    admission.admission_date.strftime('%m/%d %I:%M %p') }}
+                  </small>
+                </div>
+                <span
+                  class="badge bg-{{ 'danger' if admission.admission_type == 'emergency' else 'info' }}"
+                >
+                  {{ admission.admission_type.title() }}
+                </span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="text-center mt-3">
+            <a
+              href="{{ url_for('admissions') }}"
+              class="btn btn-sm btn-outline-warning"
+              >View All</a
+            >
+          </div>
+          {% else %}
+          <div class="text-center text-muted py-4">
+            <i class="fas fa-bed fa-3x mb-3 opacity-50"></i>
+            <p>No current admissions</p>
+            {% if current_user.role in ['admin', 'doctor'] %}
+            <a href="{{ url_for('add_admission') }}" class="btn btn-warning"
+              >Admit Patient</a
+            >
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %} {% block extra_js %}
+<script>
+  // Enhanced Dashboard JavaScript
+  class DashboardManager {
+    constructor() {
+      this.initializeDateTime();
+      this.initializeServiceWorker();
+      this.initializeNotifications();
+      this.initializeRealTimeUpdates();
+    }
+
+    // Date and Time Management
+    initializeDateTime() {
+      this.updateDateTime();
+      setInterval(() => this.updateDateTime(), 1000);
+    }
+
+    updateDateTime() {
+      const now = new Date();
+      const dateOptions = {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      };
+      const timeOptions = {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      };
+
+      const dateElement = document.getElementById("currentDate");
+      const timeElement = document.getElementById("currentTime");
+
+      if (dateElement) {
+        dateElement.textContent = now.toLocaleDateString(
+          "{{ get_language() }}",
+          dateOptions
+        );
+      }
+      if (timeElement) {
+        timeElement.textContent = now.toLocaleTimeString(
+          "{{ get_language() }}",
+          timeOptions
+        );
+      }
+    }
+
+    // Service Worker Registration
+    initializeServiceWorker() {
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("/static/sw.js")
+          .then((registration) => {
+            console.log("[Dashboard] Service Worker registered successfully");
+
+            // Check for updates
+            registration.addEventListener("updatefound", () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener("statechange", () => {
+                if (
+                  newWorker.state === "installed" &&
+                  navigator.serviceWorker.controller
+                ) {
+                  this.showUpdateNotification();
+                }
+              });
+            });
+          })
+          .catch((error) => {
+            console.error(
+              "[Dashboard] Service Worker registration failed:",
+              error
+            );
+          });
+      }
+    }
+
+    // Push Notifications
+    initializeNotifications() {
+      if ("Notification" in window && "serviceWorker" in navigator) {
+        if (Notification.permission === "default") {
+          Notification.requestPermission().then((permission) => {
+            if (permission === "granted") {
+              console.log("[Dashboard] Notification permission granted");
+            }
+          });
+        }
+      }
+    }
+
+    // Real-time Updates
+    initializeRealTimeUpdates() {
+      // Update statistics every 30 seconds
+      setInterval(() => this.updateStatistics(), 30000);
+
+      // Check for critical alerts every 10 seconds
+      setInterval(() => this.checkCriticalAlerts(), 10000);
+    }
+
+    async updateStatistics() {
+      try {
+        const response = await fetch("/api/dashboard-stats");
+        if (response.ok) {
+          const data = await response.json();
+          this.updateStatisticsDisplay(data);
+        }
+      } catch (error) {
+        console.error("[Dashboard] Failed to update statistics:", error);
+      }
+    }
+
+    updateStatisticsDisplay(data) {
+      // Update statistics cards with new data
+      const statsElements = document.querySelectorAll(".stats-number");
+      statsElements.forEach((element) => {
+        const statType = element.closest(".card").dataset.statType;
+        if (data[statType] !== undefined) {
+          this.animateNumber(
+            element,
+            parseInt(element.textContent),
+            data[statType]
+          );
+        }
+      });
+    }
+
+    animateNumber(element, from, to) {
+      const duration = 1000;
+      const start = Date.now();
+
+      const animate = () => {
+        const elapsed = Date.now() - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const current = Math.round(from + (to - from) * progress);
+
+        element.textContent = current;
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+
+      animate();
+    }
+
+    async checkCriticalAlerts() {
+      try {
+        const response = await fetch("/api/critical-alerts");
+        if (response.ok) {
+          const alerts = await response.json();
+          if (alerts.length > 0) {
+            this.showCriticalAlert(alerts[0]);
+          }
+        }
+      } catch (error) {
+        console.error("[Dashboard] Failed to check critical alerts:", error);
+      }
+    }
+
+    showCriticalAlert(alert) {
+      if (Notification.permission === "granted") {
+        new Notification("Critical Alert - MediCare Pro", {
+          body: alert.message,
+          icon: "/static/icons/alert.png",
+          badge: "/static/icons/badge.png",
+          tag: "critical-alert",
+          requireInteraction: true,
+        });
+      }
+
+      // Also show in-app notification
+      Swal.fire({
+        icon: "error",
+        title: "Critical Alert",
+        text: alert.message,
+        showConfirmButton: true,
+        confirmButtonText: "Acknowledge",
+        allowOutsideClick: false,
+      });
+    }
+
+    showUpdateNotification() {
+      Swal.fire({
+        icon: "info",
+        title: "Update Available",
+        text: "A new version of the application is available. Refresh to update.",
+        showCancelButton: true,
+        confirmButtonText: "Refresh Now",
+        cancelButtonText: "Later",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.reload();
+        }
+      });
+    }
+  }
+
+  // Offline Data Sync Function
+  async function syncOfflineData() {
+    const syncBtn = event.target.closest("button");
+    const originalContent = syncBtn.innerHTML;
+
+    // Show loading state
+    syncBtn.innerHTML =
+      '<i class="fas fa-spinner fa-spin"></i><span>{{ get_text("loading") }}</span>';
+    syncBtn.disabled = true;
+    syncBtn.classList.add("btn-loading");
+
+    try {
+      // Check if we're online
+      if (!navigator.onLine) {
+        throw new Error("No internet connection");
+      }
+
+      // Perform sync
+      const response = await fetch("/api/sync-offline", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "all",
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        Swal.fire({
+          icon: "success",
+          title: '{{ get_text("success") }}',
+          text: '{{ get_text("operation_successful") }}',
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+        });
+      } else {
+        throw new Error(data.message || "Sync failed");
+      }
+    } catch (error) {
+      console.error("[Dashboard] Sync failed:", error);
+
+      Swal.fire({
+        icon: "warning",
+        title: "Sync Notice",
+        text: "Data has been saved locally and will sync when connection is restored.",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 4000,
+      });
+    } finally {
+      // Restore button state
+      syncBtn.innerHTML = originalContent;
+      syncBtn.disabled = false;
+      syncBtn.classList.remove("btn-loading");
+    }
+  }
+
+  // Network Status Monitoring
+  function initializeNetworkMonitoring() {
+    const updateOnlineStatus = () => {
+      const statusIndicator = document.getElementById("networkStatus");
+      if (statusIndicator) {
+        if (navigator.onLine) {
+          statusIndicator.className = "badge badge-success";
+          statusIndicator.textContent = "Online";
+        } else {
+          statusIndicator.className = "badge badge-danger";
+          statusIndicator.textContent = "Offline";
+        }
+      }
+    };
+
+    window.addEventListener("online", updateOnlineStatus);
+    window.addEventListener("offline", updateOnlineStatus);
+    updateOnlineStatus();
+  }
+
+  // Initialize Dashboard
+  document.addEventListener("DOMContentLoaded", () => {
+    const dashboard = new DashboardManager();
+    initializeNetworkMonitoring();
+
+    // Add network status indicator to navbar
+    const navbar = document.querySelector(".navbar-nav");
+    if (navbar) {
+      const statusItem = document.createElement("li");
+      statusItem.className = "nav-item d-flex align-items-center";
+      statusItem.innerHTML =
+        '<span id="networkStatus" class="badge badge-success" style="display:none">Online</span>';
+      navbar.appendChild(statusItem);
+    }
+  });
+
+  // Keyboard Shortcuts
+  document.addEventListener("keydown", (e) => {
+    // Ctrl/Cmd + K for quick search
+    if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+      e.preventDefault();
+      // Implement quick search functionality
+      console.log("Quick search triggered");
+    }
+
+    // Ctrl/Cmd + Shift + S for sync
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "S") {
+      e.preventDefault();
+      syncOfflineData();
+    }
+  });
+</script>
+{% endblock %}

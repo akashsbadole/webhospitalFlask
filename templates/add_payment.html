@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Add Payment{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Record Payment</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Bill Information</h6>
+                            <p><strong>Bill Number:</strong> {{ bill.bill_number }}</p>
+                            <p><strong>Patient:</strong> {{ bill.patient.first_name }} {{ bill.patient.last_name }}</p>
+                            <p><strong>Bill Date:</strong> {{ bill.bill_date.strftime('%Y-%m-%d') }}</p>
+                            <p><strong>Bill Type:</strong> {{ bill.bill_type.upper() }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Payment Summary</h6>
+                            <p><strong>Total Amount:</strong> ${{ "%.2f"|format(bill.total_amount) }}</p>
+                            <p><strong>Paid Amount:</strong> ${{ "%.2f"|format(bill.paid_amount) }}</p>
+                            <p><strong>Balance Due:</strong>
+                                <span class="text-{{ 'success' if bill.balance_amount == 0 else 'danger' }}">
+                                    ${{ "%.2f"|format(bill.balance_amount) }}
+                                </span>
+                            </p>
+                            <p><strong>Status:</strong>
+                                <span
+                                    class="badge bg-{{ 'success' if bill.payment_status == 'paid' else 'warning' if bill.payment_status == 'partial' else 'danger' }}">
+                                    {{ bill.payment_status.title() }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="amount" class="form-label">Payment Amount *</label>
+                                    <input type="number" class="form-control" id="amount" name="amount" step="0.01"
+                                        max="{{ bill.balance_amount }}" required>
+                                    <small class="form-text text-muted">Maximum: ${{ "%.2f"|format(bill.balance_amount)
+                                        }}</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="payment_method" class="form-label">Payment Method *</label>
+                                    <select class="form-select" id="payment_method" name="payment_method" required
+                                        onchange="toggleTransactionId()">
+                                        <option value="">Select Payment Method</option>
+                                        <option value="cash">Cash</option>
+                                        <option value="card">Credit/Debit Card</option>
+                                        <option value="online">Online Payment</option>
+                                        <option value="check">Check</option>
+                                        <option value="insurance">Insurance</option>
+                                        <option value="bank_transfer">Bank Transfer</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3" id="transaction_id_field" style="display: none;">
+                                    <label for="transaction_id" class="form-label">Transaction ID</label>
+                                    <input type="text" class="form-control" id="transaction_id" name="transaction_id"
+                                        placeholder="Enter transaction/reference ID">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label">Payment Notes</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="4"
+                                        placeholder="Additional notes about the payment..."></textarea>
+                                </div>
+
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6>Quick Amount Options</h6>
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-outline-primary btn-sm"
+                                                onclick="setAmount({{ bill.balance_amount }})">
+                                                Full Balance: ${{ "%.2f"|format(bill.balance_amount) }}
+                                            </button>
+                                            {% if bill.balance_amount > 100 %}
+                                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                onclick="setAmount({{ (bill.balance_amount / 2)|round(2) }})">
+                                                Half Payment: ${{ "%.2f"|format((bill.balance_amount / 2)|round(2)) }}
+                                            </button>
+                                            {% endif %}
+                                            {% if bill.balance_amount > 50 %}
+                                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                onclick="setAmount(100)">
+                                                $100.00
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Note:</strong> After recording this payment, the bill status will be
+                                    automatically updated.
+                                    {% if bill.balance_amount > 0 %}
+                                    If this payment covers the full balance, the bill will be marked as "Paid".
+                                    {% endif %}
+                                </div>
+
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-money-bill"></i> Record Payment
+                                </button>
+                                <a href="{{ url_for('billing') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Bill Details</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Services/Items</h6>
+                    {% for item in bill.items %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{{ item.service_name }} ({{ item.quantity }}x)</span>
+                        <span>${{ "%.2f"|format(item.total_price) }}</span>
+                    </div>
+                    {% endfor %}
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span>Subtotal:</span>
+                        <span>${{ "%.2f"|format(bill.subtotal) }}</span>
+                    </div>
+                    {% if bill.discount > 0 %}
+                    <div class="d-flex justify-content-between text-success">
+                        <span>Discount:</span>
+                        <span>-${{ "%.2f"|format(bill.discount) }}</span>
+                    </div>
+                    {% endif %}
+                    {% if bill.tax_amount > 0 %}
+                    <div class="d-flex justify-content-between">
+                        <span>Tax:</span>
+                        <span>${{ "%.2f"|format(bill.tax_amount) }}</span>
+                    </div>
+                    {% endif %}
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <strong>Total:</strong>
+                        <strong>${{ "%.2f"|format(bill.total_amount) }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            {% if bill.payments %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Payment History</h5>
+                </div>
+                <div class="card-body">
+                    {% for payment in bill.payments %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <div>
+                            <small class="text-muted">{{ payment.payment_date.strftime('%Y-%m-%d') }}</small><br>
+                            <span>{{ payment.payment_method.title() }}</span>
+                            {% if payment.transaction_id %}
+                            <br><small class="text-muted">{{ payment.transaction_id }}</small>
+                            {% endif %}
+                        </div>
+                        <span class="text-success">${{ "%.2f"|format(payment.amount) }}</span>
+                    </div>
+                    <hr>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleTransactionId() {
+        const paymentMethod = document.getElementById('payment_method').value;
+        const transactionField = document.getElementById('transaction_id_field');
+
+        if (['card', 'online', 'bank_transfer'].includes(paymentMethod)) {
+            transactionField.style.display = 'block';
+            document.getElementById('transaction_id').required = true;
+        } else {
+            transactionField.style.display = 'none';
+            document.getElementById('transaction_id').required = false;
+        }
+    }
+
+    function setAmount(amount) {
+        document.getElementById('amount').value = amount.toFixed(2);
+    }
+
+    // Auto-focus on amount field
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('amount').focus();
+    });
+</script>
+{% endblock %}

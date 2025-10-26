@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Data Export{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Data Export & Reports</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Patient Data Export -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Patient Data Export</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="patientExportForm">
+                                        <div class="form-group">
+                                            <label>Export Format:</label>
+                                            <select class="form-control" name="format" required>
+                                                <option value="csv">CSV</option>
+                                                <option value="excel">Excel</option>
+                                                <option value="pdf">PDF</option>
+                                                <option value="fhir">HL7 FHIR</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="include_sensitive"
+                                                    id="includeSensitive">
+                                                <label class="form-check-label" for="includeSensitive">
+                                                    Include Sensitive Data (PII)
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="include_medical"
+                                                    id="includeMedical">
+                                                <label class="form-check-label" for="includeMedical">
+                                                    Include Medical Records (Excel only)
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <button type="button" class="btn btn-primary" onclick="exportPatients()">
+                                            <i class="fas fa-download"></i> Export Patients
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Comprehensive Reports -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Comprehensive Reports</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="reportForm">
+                                        <div class="form-group">
+                                            <label>Report Type:</label>
+                                            <select class="form-control" name="type" required>
+                                                <option value="daily">Daily Report</option>
+                                                <option value="weekly">Weekly Report</option>
+                                                <option value="monthly">Monthly Report</option>
+                                                <option value="quarterly">Quarterly Report</option>
+                                                <option value="yearly">Yearly Report</option>
+                                                <option value="custom">Custom Period</option>
+                                            </select>
+                                        </div>
+
+                                        <div id="customDateRange" style="display: none;">
+                                            <div class="form-group">
+                                                <label>Start Date:</label>
+                                                <input type="date" class="form-control" name="start_date">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>End Date:</label>
+                                                <input type="date" class="form-control" name="end_date">
+                                            </div>
+                                        </div>
+
+                                        <button type="button" class="btn btn-success" onclick="generateReport()">
+                                            <i class="fas fa-chart-bar"></i> Generate Report
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Quick Export Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5>Quick Exports</h5>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary"
+                                    onclick="quickExport('appointments')">
+                                    <i class="fas fa-calendar"></i> Today's Appointments
+                                </button>
+                                <button type="button" class="btn btn-outline-primary"
+                                    onclick="quickExport('admissions')">
+                                    <i class="fas fa-bed"></i> Current Admissions
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" onclick="quickExport('bills')">
+                                    <i class="fas fa-file-invoice"></i> Pending Bills
+                                </button>
+                                <button type="button" class="btn btn-outline-primary"
+                                    onclick="quickExport('inventory')">
+                                    <i class="fas fa-pills"></i> Low Stock Items
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Show/hide custom date range
+    document.querySelector('select[name="type"]').addEventListener('change', function () {
+        const customDateRange = document.getElementById('customDateRange');
+        if (this.value === 'custom') {
+            customDateRange.style.display = 'block';
+        } else {
+            customDateRange.style.display = 'none';
+        }
+    });
+
+    function exportPatients() {
+        const form = document.getElementById('patientExportForm');
+        const formData = new FormData(form);
+
+        const format = formData.get('format');
+        const params = new URLSearchParams();
+
+        if (formData.get('include_sensitive')) {
+            params.append('include_sensitive', 'true');
+        }
+        if (formData.get('include_medical')) {
+            params.append('include_medical', 'true');
+        }
+
+        const url = `/admin/export/patients/${format}?${params.toString()}`;
+        window.open(url, '_blank');
+    }
+
+    function generateReport() {
+        const form = document.getElementById('reportForm');
+        const formData = new FormData(form);
+
+        const params = new URLSearchParams();
+        params.append('type', formData.get('type'));
+
+        if (formData.get('start_date')) {
+            params.append('start_date', formData.get('start_date'));
+        }
+        if (formData.get('end_date')) {
+            params.append('end_date', formData.get('end_date'));
+        }
+
+        const url = `/admin/export/comprehensive?${params.toString()}`;
+        window.open(url, '_blank');
+    }
+
+    function quickExport(type) {
+        // Implementation for quick exports
+        alert(`Quick export for ${type} - Feature coming soon!`);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Two-Factor Authentication{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h3 class="card-title">Two-Factor Authentication</h3>
+                    <p class="text-muted">Enter your verification code to continue</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="form-group">
+                            <label for="code">Verification Code:</label>
+                            <input type="text" class="form-control text-center" id="code" name="code" maxlength="8"
+                                required autofocus style="font-size: 1.5em; letter-spacing: 0.2em;">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="method">Verification Method:</label>
+                            <select class="form-control" id="method" name="method" onchange="handleMethodChange()">
+                                {% if 'app' in methods %}
+                                <option value="app">Authenticator App</option>
+                                {% endif %}
+                                {% if 'sms' in methods %}
+                                <option value="sms">SMS Code</option>
+                                {% endif %}
+                                {% if 'email' in methods %}
+                                <option value="email">Email Code</option>
+                                {% endif %}
+                                <option value="backup">Backup Code</option>
+                            </select>
+                        </div>
+
+                        <div id="sms-controls" class="form-group" style="display: none;">
+                            <button type="button" class="btn btn-info btn-sm" onclick="sendSMSCode()">
+                                Send SMS Code
+                            </button>
+                        </div>
+
+                        <div id="email-controls" class="form-group" style="display: none;">
+                            <button type="button" class="btn btn-info btn-sm" onclick="sendEmailCode()">
+                                Send Email Code
+                            </button>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">Verify</button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('logout') }}" class="text-muted">Cancel and Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function handleMethodChange() {
+        const method = document.getElementById('method').value;
+        const smsControls = document.getElementById('sms-controls');
+        const emailControls = document.getElementById('email-controls');
+        const codeInput = document.getElementById('code');
+
+        // Hide all controls
+        smsControls.style.display = 'none';
+        emailControls.style.display = 'none';
+
+        // Show relevant controls and update placeholder
+        if (method === 'sms') {
+            smsControls.style.display = 'block';
+            codeInput.placeholder = 'Enter 6-digit SMS code';
+            codeInput.maxLength = 6;
+        } else if (method === 'email') {
+            emailControls.style.display = 'block';
+            codeInput.placeholder = 'Enter 6-digit email code';
+            codeInput.maxLength = 6;
+        } else if (method === 'backup') {
+            codeInput.placeholder = 'Enter backup code (XXXX-XXXX)';
+            codeInput.maxLength = 9;
+        } else {
+            codeInput.placeholder = 'Enter 6-digit code from app';
+            codeInput.maxLength = 6;
+        }
+    }
+
+    function sendSMSCode() {
+        fetch('/2fa/send_sms', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }).then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('SMS code sent successfully');
+                } else {
+                    alert('Failed to send SMS: ' + (data.message || 'Unknown error'));
+                }
+            });
+    }
+
+    function sendEmailCode() {
+        fetch('/2fa/send_email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }).then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Email code sent successfully');
+                } else {
+                    alert('Failed to send email: ' + (data.message || 'Unknown error'));
+                }
+            });
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        handleMethodChange();
+    });
+</script>
+{% endblock %}

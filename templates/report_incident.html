@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Report Incident - Hospital Management System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="fas fa-file-medical-alt"></i> Report Incident</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('report_incident') }}">
+                        <div class="form-group">
+                            <label>Incident Type</label>
+                            <select name="incident_type" class="form-control" required>
+                                <option value="">Select Type</option>
+                                <option value="medication_error">Medication Error</option>
+                                <option value="patient_fall">Patient Fall</option>
+                                <option value="equipment_failure">Equipment Failure</option>
+                                <option value="infection">Healthcare-Associated Infection</option>
+                                <option value="adverse_event">Adverse Event</option>
+                                <option value="near_miss">Near Miss</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Severity</label>
+                            <select name="severity" class="form-control" required>
+                                <option value="low">Low - No harm</option>
+                                <option value="medium">Medium - Minor harm</option>
+                                <option value="high">High - Moderate harm</option>
+                                <option value="critical">Critical - Severe harm</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Location</label>
+                            <input type="text" name="location" class="form-control" placeholder="e.g., Ward 3, Room 205"
+                                required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Date & Time of Incident</label>
+                            <input type="datetime-local" name="incident_datetime" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea name="description" class="form-control" rows="5"
+                                placeholder="Provide detailed description of the incident..." required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Immediate Actions Taken</label>
+                            <textarea name="actions_taken" class="form-control" rows="3"
+                                placeholder="Describe any immediate actions taken..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Witnesses (if any)</label>
+                            <input type="text" name="witnesses" class="form-control" placeholder="Names of witnesses">
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Note:</strong> All incident reports are confidential and used for quality
+                            improvement purposes only.
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-paper-plane"></i> Submit Incident Report
+                            </button>
+                            <a href="{{ url_for('quality_dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

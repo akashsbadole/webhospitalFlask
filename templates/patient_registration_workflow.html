@@ -1,0 +1,550 @@
+{% extends "base.html" %} {% block title %}Patient Registration Workflow - {{
+get_text('title') }}{% endblock %} {% block content %}
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2>
+        <i class="fas fa-user-plus text-primary"></i>
+        Patient Registration & Admission Workflow
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('patients') }}">Patients</a>
+          </li>
+          <li class="breadcrumb-item active">Registration Workflow</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-md-4 text-end">
+      <div class="btn-group" role="group">
+        <a href="{{ url_for('patients') }}" class="btn btn-outline-secondary">
+          <i class="fas fa-list"></i> All Patients
+        </a>
+        <a href="{{ url_for('add_patient') }}" class="btn btn-primary">
+          <i class="fas fa-user-plus"></i> Quick Registration
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workflow Progress -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Registration Process</h5>
+          <div class="progress mb-3" style="height: 30px">
+            <div
+              class="progress-bar bg-success"
+              role="progressbar"
+              style="width: 100%"
+              aria-valuenow="100"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
+              <span class="fw-bold">Step 4: Complete Registration</span>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between">
+            <div class="text-center">
+              <i class="fas fa-file-alt text-success fa-2x"></i>
+              <h6 class="mt-2">Step 1: Documents</h6>
+            </div>
+            <div class="text-center">
+              <i class="fas fa-user-check text-success fa-2x"></i>
+              <h6 class="mt-2">Step 2: Personal Info</h6>
+            </div>
+            <div class="text-center">
+              <i class="fas fa-notes-medical text-success fa-2x"></i>
+              <h6 class="mt-2">Step 3: Medical History</h6>
+            </div>
+            <div class="text-center">
+              <i class="fas fa-check-circle text-success fa-2x"></i>
+              <h6 class="mt-2">Step 4: Complete</h6>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Patient Summary Card -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="fas fa-user"></i> Patient Summary</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6>Personal Information</h6>
+              <p>
+                <strong>Patient ID:</strong>
+                <span class="text-primary">{{ patient.patient_id }}</span>
+              </p>
+              <p>
+                <strong>Name:</strong> {{ patient.first_name }} {{
+                patient.last_name }}
+              </p>
+              <p>
+                <strong>Date of Birth:</strong> {{
+                patient.date_of_birth.strftime('%Y-%m-%d') if
+                patient.date_of_birth else 'Not provided' }}
+              </p>
+              <p>
+                <strong>Gender:</strong> {{ patient.gender or 'Not specified' }}
+              </p>
+              <p><strong>Phone:</strong> {{ patient.phone }}</p>
+              <p>
+                <strong>Email:</strong> {{ patient.email or 'Not provided' }}
+              </p>
+            </div>
+            <div class="col-md-6">
+              <h6>Medical Information</h6>
+              <p>
+                <strong>Blood Group:</strong> {{ patient.blood_group or 'Not
+                specified' }}
+              </p>
+              <p>
+                <strong>Allergies:</strong> {{ patient.allergies or 'None
+                reported' }}
+              </p>
+              <p>
+                <strong>Medical History:</strong> {{ patient.medical_history or
+                'None provided' }}
+              </p>
+              <p>
+                <strong>Emergency Contact:</strong> {{ patient.emergency_contact
+                or 'Not provided' }}
+              </p>
+              <p>
+                <strong>Emergency Phone:</strong> {{ patient.emergency_phone or
+                'Not provided' }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-clipboard-check"></i> Registration Status
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <h6>Documents Collected</h6>
+            <div class="d-flex align-items-center mb-2">
+              <i class="fas fa-id-card text-success me-2"></i>
+              <span
+                >ID Proof: {{ '✓ Collected' if patient.id_proof_type else '✗
+                Missing' }}</span
+              >
+            </div>
+            <div class="d-flex align-items-center mb-2">
+              <i class="fas fa-file-medical text-success me-2"></i>
+              <span
+                >Medical Records: {{ '✓ Collected' if patient.medical_history
+                else '✗ Pending' }}</span
+              >
+            </div>
+            <div class="d-flex align-items-center">
+              <i class="fas fa-shield-alt text-success me-2"></i>
+              <span
+                >Insurance: {{ '✓ Provided' if patient.insurance_provider else
+                '✗ Not provided' }}</span
+              >
+            </div>
+          </div>
+          <hr />
+          <div class="text-center">
+            <span class="badge bg-success fs-6">Registration Complete</span>
+            <p class="mt-2 mb-0 text-muted">
+              Patient ID: {{ patient.patient_id }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Next Steps -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-tasks"></i> Next Steps in Patient Workflow
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              <div class="card h-100 border-primary">
+                <div class="card-body text-center">
+                  <i class="fas fa-calendar-check fa-3x text-primary mb-3"></i>
+                  <h6>Schedule Consultation</h6>
+                  <p class="text-muted small">Book appointment with doctor</p>
+                  <button
+                    class="btn btn-primary btn-sm"
+                    onclick="scheduleConsultation()"
+                  >
+                    <i class="fas fa-plus"></i> Schedule
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card h-100 border-info">
+                <div class="card-body text-center">
+                  <i class="fas fa-procedures fa-3x text-info mb-3"></i>
+                  <h6>Order Tests</h6>
+                  <p class="text-muted small">Schedule lab/imaging tests</p>
+                  <button class="btn btn-info btn-sm" onclick="orderTests()">
+                    <i class="fas fa-flask"></i> Order Tests
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card h-100 border-warning">
+                <div class="card-body text-center">
+                  <i class="fas fa-pills fa-3x text-warning mb-3"></i>
+                  <h6>Prescribe Medication</h6>
+                  <p class="text-muted small">Create prescription</p>
+                  <button
+                    class="btn btn-warning btn-sm"
+                    onclick="createPrescription()"
+                  >
+                    <i class="fas fa-prescription"></i> Prescribe
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card h-100 border-success">
+                <div class="card-body text-center">
+                  <i class="fas fa-bed fa-3x text-success mb-3"></i>
+                  <h6>Admit Patient</h6>
+                  <p class="text-muted small">For inpatient care</p>
+                  <button
+                    class="btn btn-success btn-sm"
+                    onclick="admitPatient()"
+                  >
+                    <i class="fas fa-hospital"></i> Admit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activities -->
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-history"></i> Registration Timeline
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-point bg-success"></div>
+              <div class="timeline-content">
+                <h6>Registration Completed</h6>
+                <p class="text-muted mb-1">
+                  {{ patient.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </p>
+                <p>
+                  Patient successfully registered in the system with ID {{
+                  patient.patient_id }}
+                </p>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-point bg-info"></div>
+              <div class="timeline-content">
+                <h6>Medical History Collected</h6>
+                <p class="text-muted mb-1">
+                  {{ patient.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                </p>
+                <p>Medical history and allergies information recorded</p>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-point bg-primary"></div>
+              <div class="timeline-content">
+                <h6>Personal Information Recorded</h6>
+                <p class="text-muted mb-1">
+                  {{ patient.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                </p>
+                <p>Basic patient information and contact details saved</p>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-point bg-secondary"></div>
+              <div class="timeline-content">
+                <h6>Initial Registration</h6>
+                <p class="text-muted mb-1">
+                  {{ patient.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </p>
+                <p>Patient arrived and provided initial documents</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-file-alt"></i> Required Documents
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="list-group list-group-flush">
+            <div
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <i class="fas fa-id-card text-success me-2"></i>
+                <span>ID Proof</span>
+              </div>
+              <span class="badge bg-success">Collected</span>
+            </div>
+            <div
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <i class="fas fa-file-medical text-success me-2"></i>
+                <span>Medical Records</span>
+              </div>
+              <span class="badge bg-success">Collected</span>
+            </div>
+            <div
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <i class="fas fa-shield-alt text-success me-2"></i>
+                <span>Insurance Card</span>
+              </div>
+              <span class="badge bg-success">Provided</span>
+            </div>
+            <div
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <i class="fas fa-notes-medical text-success me-2"></i>
+                <span>Consent Forms</span>
+              </div>
+              <span class="badge bg-success">Signed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Consultation Modal -->
+<div class="modal fade" id="consultationModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Schedule Consultation</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body" id="consultationContent">
+        <!-- Content will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function scheduleConsultation() {
+    const modal = new bootstrap.Modal(
+      document.getElementById("consultationModal")
+    );
+    document.getElementById("consultationContent").innerHTML = `
+            <form id="consultationForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Doctor</label>
+                            <select class="form-select" name="doctor_id" required>
+                                <option value="">Select Doctor</option>
+                                <option value="1">Dr. John Smith - General Medicine</option>
+                                <option value="2">Dr. Sarah Johnson - Cardiology</option>
+                                <option value="3">Dr. Michael Brown - Pediatrics</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Appointment Type</label>
+                            <select class="form-select" name="appointment_type" required>
+                                <option value="consultation">Consultation</option>
+                                <option value="follow_up">Follow-up</option>
+                                <option value="telemedicine">Telemedicine</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" name="appointment_date" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Time</label>
+                            <input type="time" class="form-control" name="appointment_time" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Reason for Visit</label>
+                    <textarea class="form-control" name="reason" rows="3" placeholder="Describe the reason for consultation..."></textarea>
+                </div>
+                <div class="text-end">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Schedule Appointment</button>
+                </div>
+            </form>
+        `;
+    modal.show();
+  }
+
+  function orderTests() {
+    Swal.fire({
+      title: "Order Tests",
+      text: "This will open the test ordering interface",
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonText: "Order Tests",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href =
+          '{{ url_for("add_lab_order") }}?patient_id={{ patient.id }}';
+      }
+    });
+  }
+
+  function createPrescription() {
+    Swal.fire({
+      title: "Create Prescription",
+      text: "This will open the prescription creation interface",
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonText: "Create Prescription",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href =
+          '{{ url_for("create_prescription", patient_id=patient.id) }}';
+      }
+    });
+  }
+
+  function admitPatient() {
+    Swal.fire({
+      title: "Admit Patient",
+      text: "This will open the patient admission interface",
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonText: "Admit Patient",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href =
+          '{{ url_for("add_admission") }}?patient_id={{ patient.id }}';
+      }
+    });
+  }
+
+  // Handle consultation form submission
+  document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("submit", function (e) {
+      if (e.target.id === "consultationForm") {
+        e.preventDefault();
+        // In a real application, this would submit the form via AJAX
+        Swal.fire({
+          title: "Appointment Scheduled!",
+          text: "Consultation has been scheduled successfully",
+          icon: "success",
+          confirmButtonText: "OK",
+        }).then(() => {
+          bootstrap.Modal.getInstance(
+            document.getElementById("consultationModal")
+          ).hide();
+        });
+      }
+    });
+  });
+</script>
+
+<style>
+  .timeline {
+    position: relative;
+    padding: 20px 0;
+  }
+
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+  }
+
+  .timeline-item {
+    position: relative;
+    padding-left: 50px;
+    margin-bottom: 30px;
+  }
+
+  .timeline-point {
+    position: absolute;
+    left: 12px;
+    top: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+  }
+
+  .timeline-content h6 {
+    margin-bottom: 5px;
+    color: #495057;
+  }
+
+  .timeline-content p {
+    margin-bottom: 0;
+    color: #6c757d;
+  }
+</style>
+{% endblock %}

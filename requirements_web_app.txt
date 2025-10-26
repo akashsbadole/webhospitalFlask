@@ -1,0 +1,62 @@
+# Core Flask framework
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Flask-Login==0.6.3
+
+# Security
+Werkzeug==2.3.7
+bcrypt==4.1.2
+passlib[bcrypt]==1.7.4
+
+# Database
+SQLAlchemy==2.0.23
+
+# File handling
+Pillow==10.2.0
+
+# Background tasks and caching
+celery==5.3.4
+redis==5.0.1
+
+# Date/Time utilities
+python-dateutil==2.8.2
+
+# PDF Generation
+reportlab==4.0.7
+
+# Excel/CSV Export
+openpyxl==3.1.2
+pandas==2.1.4
+
+# Two-Factor Authentication
+pyotp==2.9.0
+
+# SMS/Notifications
+twilio==8.10.3
+
+# Payment Gateway
+stripe==7.8.0
+
+# Barcode/QR Code generation
+qrcode==7.4.2
+
+# Environment variables
+python-dotenv==1.0.1
+
+# Email support
+Flask-Mail==0.9.1
+
+# HTTP requests
+requests==2.31.0
+
+# Advanced validation
+pydantic==2.5.0
+
+# Template engine
+jinja2==3.1.2
+
+# Async support
+aioredis==2.0.1
+
+# Configuration management
+dynaconf==3.2.4

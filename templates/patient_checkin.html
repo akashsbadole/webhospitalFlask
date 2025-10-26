@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Check-In{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Patient Check-In</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <input type="date" class="form-control" id="dateFilter"
+                                value="{{ datetime.now().strftime('%Y-%m-%d') }}" onchange="filterAppointments()">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" placeholder="Search patient..."
+                                onkeyup="searchPatients(this.value)">
+                        </div>
+                    </div>
+
+                    <!-- Appointments Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Patient</th>
+                                    <th>Doctor</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in appointments %}
+                                <tr class="{{ 'table-success' if appointment.status == 'checked_in' else '' }}">
+                                    <td>{{ appointment.appointment_date.strftime('%H:%M') }}</td>
+                                    <td>
+                                        <strong>{{ appointment.patient.first_name }} {{ appointment.patient.last_name
+                                            }}</strong><br>
+                                        <small class="text-muted">{{ appointment.patient.patient_id }}</small>
+                                    </td>
+                                    <td>{{ appointment.doctor.full_name }}</td>
+                                    <td>
+                                        <span
+                                            class="badge bg-{{ 'info' if appointment.appointment_type == 'telemedicine' else 'primary' }}">
+                                            {{ appointment.appointment_type.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge bg-{{ 'success' if appointment.status == 'checked_in' else 'warning' if appointment.status == 'scheduled' else 'secondary' }}">
+                                            {{ appointment.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if appointment.status == 'scheduled' %}
+                                        <form method="POST"
+                                            action="{{ url_for('checkin_appointment', appointment_id=appointment.id) }}"
+                                            style="display: inline;">
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="fas fa-check"></i> Check In
+                                            </button>
+                                        </form>
+                                        {% elif appointment.status == 'checked_in' %}
+                                        <span class="text-success">
+                                            <i class="fas fa-check-circle"></i> Checked In
+                                        </span>
+                                        {% endif %}
+
+                                        <button class="btn btn-sm btn-info"
+                                            onclick="viewPatient({{ appointment.patient.id }})">
+                                            <i class="fas fa-user"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Check-in Statistics -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Today's Check-in Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-primary">{{ appointments|length }}</h3>
+                            <p>Total Appointments</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-success">{{ appointments|selectattr('status', 'equalto',
+                                'checked_in')|list|length }}</h3>
+                            <p>Checked In</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-warning">{{ appointments|selectattr('status', 'equalto',
+                                'scheduled')|list|length }}</h3>
+                            <p>Pending</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-info">{{ appointments|selectattr('status', 'equalto',
+                                'completed')|list|length }}</h3>
+                            <p>Completed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterAppointments() {
+        const date = document.getElementById('dateFilter').value;
+        const url = new URL(window.location);
+        url.searchParams.set('date', date);
+        window.location = url;
+    }
+
+    function searchPatients(query) {
+        // Implementation for search functionality
+        console.log('Search functionality:', query);
+    }
+
+    function viewPatient(patientId) {
+        window.location.href = '/ehr/' + patientId;
+    }
+</script>
+{% endblock %}

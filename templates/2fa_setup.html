@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Two-Factor Authentication Setup{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Setup Two-Factor Authentication</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Step 1: Scan QR Code</h5>
+                            <p>Use your authenticator app (Google Authenticator, Authy, etc.) to scan this QR code:</p>
+                            <div class="text-center mb-3">
+                                <img src="data:image/png;base64,{{ qr_data.qr_code }}" alt="QR Code" class="img-fluid">
+                            </div>
+                            <p class="text-muted small">
+                                Can't scan? Enter this key manually: <br>
+                                <code>{{ qr_data.secret_key }}</code>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Step 2: Verify Setup</h5>
+                            <form method="POST" action="{{ url_for('enable_2fa') }}">
+                                <div class="form-group">
+                                    <label for="verification_code">Enter 6-digit code from your app:</label>
+                                    <input type="text" class="form-control" id="verification_code"
+                                        name="verification_code" maxlength="6" required>
+                                </div>
+                                <input type="hidden" name="method" value="app">
+                                <button type="submit" class="btn btn-primary">Enable 2FA</button>
+                                <a href="{{ url_for('profile') }}" class="btn btn-secondary">Cancel</a>
+                            </form>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h5>Backup Codes</h5>
+                            <p class="text-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Save these backup codes in a safe place. You can use them to access your account if you
+                                lose your authenticator device.
+                            </p>
+                            <div class="row">
+                                {% for code in qr_data.backup_codes %}
+                                <div class="col-md-3 col-sm-6">
+                                    <code class="d-block p-2 mb-2 bg-light">{{ code }}</code>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <p class="text-muted small">
+                                Each backup code can only be used once. After enabling 2FA, you can regenerate these
+                                codes from your profile.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

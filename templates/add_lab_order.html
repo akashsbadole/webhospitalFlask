@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Add Lab Order{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>New Laboratory Order</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="patient_id" class="form-label">Patient *</label>
+                                    <select class="form-select" id="patient_id" name="patient_id" required>
+                                        <option value="">Select Patient</option>
+                                        {% for patient in patients %}
+                                        <option value="{{ patient.id }}">{{ patient.patient_id }} - {{
+                                            patient.first_name }} {{ patient.last_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="test_id" class="form-label">Lab Test *</label>
+                                    <select class="form-select" id="test_id" name="test_id" required
+                                        onchange="updateTestInfo()">
+                                        <option value="">Select Test</option>
+                                        {% for test in tests %}
+                                        <option value="{{ test.id }}" data-price="{{ test.price }}"
+                                            data-description="{{ test.description }}">
+                                            {{ test.test_name }} ({{ test.test_code }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="priority" class="form-label">Priority</label>
+                                    <select class="form-select" id="priority" name="priority">
+                                        <option value="routine">Routine</option>
+                                        <option value="normal" selected>Normal</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label">Clinical Notes</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="4"
+                                        placeholder="Clinical indication, symptoms, etc."></textarea>
+                                </div>
+
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6>Test Information</h6>
+                                        <div id="test-info">
+                                            <p class="text-muted">Select a test to view details</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-flask"></i> Order Lab Test
+                                </button>
+                                <a href="{{ url_for('lab_orders') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Patient Information</h5>
+                </div>
+                <div class="card-body">
+                    <div id="patient-info">
+                        <p class="text-muted">Select a patient to view details</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateTestInfo() {
+        const testSelect = document.getElementById('test_id');
+        const selectedOption = testSelect.options[testSelect.selectedIndex];
+        const testInfoDiv = document.getElementById('test-info');
+
+        if (selectedOption.value) {
+            const price = selectedOption.getAttribute('data-price');
+            const description = selectedOption.getAttribute('data-description');
+
+            testInfoDiv.innerHTML = `
+            <p><strong>Price:</strong> $${price}</p>
+            <p><strong>Description:</strong> ${description}</p>
+        `;
+        } else {
+            testInfoDiv.innerHTML = '<p class="text-muted">Select a test to view details</p>';
+        }
+    }
+
+    // Update patient info when patient is selected
+    document.getElementById('patient_id').addEventListener('change', function () {
+        const patientId = this.value;
+        const patientInfoDiv = document.getElementById('patient-info');
+
+        if (patientId) {
+            // In a real implementation, you would fetch patient details via AJAX
+            const selectedOption = this.options[this.selectedIndex];
+            const patientName = selectedOption.text.split(' - ')[1];
+
+            patientInfoDiv.innerHTML = `
+            <p><strong>Name:</strong> ${patientName}</p>
+            <p class="text-muted">Loading additional details...</p>
+        `;
+        } else {
+            patientInfoDiv.innerHTML = '<p class="text-muted">Select a patient to view details</p>';
+        }
+    });
+</script>
+{% endblock %}

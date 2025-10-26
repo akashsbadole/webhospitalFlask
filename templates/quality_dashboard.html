@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Quality Management - Hospital Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Quality Metrics -->
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>Patient Satisfaction</h5>
+                    <h2>{{ metrics.get('satisfaction_score', 0) }}%</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5>Open Incidents</h5>
+                    <h2>{{ metrics.get('open_incidents', 0) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5>Pending Complaints</h5>
+                    <h2>{{ metrics.get('pending_complaints', 0) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5>Quality Score</h5>
+                    <h2>{{ metrics.get('quality_score', 0) }}/100</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-chart-line"></i> Quality Metrics</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Readmission Rate</h6>
+                            <div class="progress mb-3">
+                                <div class="progress-bar bg-success"
+                                    style="width: {{ metrics.get('readmission_rate', 0) }}%">
+                                    {{ metrics.get('readmission_rate', 0) }}%
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Infection Rate</h6>
+                            <div class="progress mb-3">
+                                <div class="progress-bar bg-warning"
+                                    style="width: {{ metrics.get('infection_rate', 0) }}%">
+                                    {{ metrics.get('infection_rate', 0) }}%
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Average Wait Time</h6>
+                            <p class="h4">{{ metrics.get('avg_wait_time', 0) }} min</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Staff Response Time</h6>
+                            <p class="h4">{{ metrics.get('staff_response_time', 0) }} min</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h4 class="mb-0"><i class="fas fa-exclamation-circle"></i> Quick Actions</h4>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('report_incident') }}" class="btn btn-danger btn-block mb-2">
+                        <i class="fas fa-file-medical-alt"></i> Report Incident
+                    </a>
+                    <button class="btn btn-info btn-block mb-2" data-toggle="modal" data-target="#feedbackModal">
+                        <i class="fas fa-comment"></i> Patient Feedback
+                    </button>
+                    <button class="btn btn-success btn-block">
+                        <i class="fas fa-file-download"></i> Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0"><i class="fas fa-list"></i> Recent Incidents</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Severity</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center">No incidents reported</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Modal -->
+<div class="modal fade" id="feedbackModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Patient Feedback</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form method="POST" action="{{ url_for('submit_feedback') }}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Patient ID</label>
+                        <input type="number" name="patient_id" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category" class="form-control" required>
+                            <option value="service">Service Quality</option>
+                            <option value="cleanliness">Cleanliness</option>
+                            <option value="staff">Staff Behavior</option>
+                            <option value="facilities">Facilities</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Rating</label>
+                        <select name="rating" class="form-control" required>
+                            <option value="5">5 - Excellent</option>
+                            <option value="4">4 - Good</option>
+                            <option value="3">3 - Average</option>
+                            <option value="2">2 - Poor</option>
+                            <option value="1">1 - Very Poor</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Feedback</label>
+                        <textarea name="feedback" class="form-control" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

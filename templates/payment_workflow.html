@@ -1,0 +1,914 @@
+{% extends "base.html" %} {% block title %}Payment Workflow - {{
+get_text('title') }}{% endblock %} {% block content %}
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2>
+        <i class="fas fa-credit-card text-success"></i>
+        Patient Payment & Billing Workflow
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('patients') }}">Patients</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('ehr', patient_id=patient.id) }}"
+              >Patient EHR</a
+            >
+          </li>
+          <li class="breadcrumb-item active">Payment Workflow</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-md-4 text-end">
+      <div class="btn-group" role="group">
+        <a
+          href="{{ url_for('ehr', patient_id=patient.id) }}"
+          class="btn btn-outline-secondary"
+        >
+          <i class="fas fa-arrow-left"></i> Back to EHR
+        </a>
+        <button class="btn btn-success" onclick="generateInvoice()">
+          <i class="fas fa-file-invoice"></i> Generate Invoice
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Process Status -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Payment Process</h5>
+          <div class="progress mb-3" style="height: 30px">
+            <div
+              class="progress-bar bg-warning"
+              role="progressbar"
+              style="width: 40%"
+              aria-valuenow="40"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
+              <span class="fw-bold">Step 2: Payment Processing</span>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between">
+            <div class="text-center">
+              <i class="fas fa-file-invoice text-warning fa-2x"></i>
+              <h6 class="mt-2">Step 1: Invoice</h6>
+            </div>
+            <div class="text-center">
+              <i class="fas fa-credit-card text-warning fa-2x"></i>
+              <h6 class="mt-2">Step 2: Payment</h6>
+            </div>
+            <div class="text-center">
+              <i class="fas fa-receipt text-muted fa-2x"></i>
+              <h6 class="mt-2">Step 3: Receipt</h6>
+            </div>
+            <div class="text-center">
+              <i class="fas fa-check-circle text-muted fa-2x"></i>
+              <h6 class="mt-2">Step 4: Complete</h6>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Patient and Bill Summary -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"><i class="fas fa-user"></i> Patient Information</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Patient ID:</strong> {{ patient.patient_id }}</p>
+              <p>
+                <strong>Name:</strong> {{ patient.first_name }} {{
+                patient.last_name }}
+              </p>
+              <p><strong>Phone:</strong> {{ patient.phone }}</p>
+              <p>
+                <strong>Email:</strong> {{ patient.email or 'Not provided' }}
+              </p>
+            </div>
+            <div class="col-md-6">
+              <p>
+                <strong>Insurance Provider:</strong> {{
+                patient.insurance_provider or 'None' }}
+              </p>
+              <p>
+                <strong>Policy Number:</strong> {{ patient.insurance_policy or
+                'N/A' }}
+              </p>
+              <p>
+                <strong>Emergency Contact:</strong> {{ patient.emergency_contact
+                or 'Not provided' }}
+              </p>
+              <p>
+                <strong>Emergency Phone:</strong> {{ patient.emergency_phone or
+                'Not provided' }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0"><i class="fas fa-calculator"></i> Bill Summary</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <span>Subtotal:</span>
+              <span class="fw-bold"
+                >${{ "%.2f"|format(bill.subtotal or 0) }}</span
+              >
+            </div>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <span>Discount:</span>
+              <span class="text-danger"
+                >-${{ "%.2f"|format(bill.discount or 0) }}</span
+              >
+            </div>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <span>Tax:</span>
+              <span>${{ "%.2f"|format(bill.tax or 0) }}</span>
+            </div>
+          </div>
+          <hr />
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <span class="fw-bold">Total Amount:</span>
+              <span class="fw-bold text-primary"
+                >${{ "%.2f"|format(bill.total_amount or 0) }}</span
+              >
+            </div>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <span class="fw-bold">Paid Amount:</span>
+              <span class="fw-bold text-success"
+                >${{ "%.2f"|format(bill.paid_amount or 0) }}</span
+              >
+            </div>
+          </div>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <span class="fw-bold">Balance:</span>
+              <span
+                class="fw-bold {{ 'text-danger' if bill.balance_amount > 0 else 'text-success' }}"
+                >${{ "%.2f"|format(bill.balance_amount or 0) }}</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bill Details -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-list-alt"></i> Bill Details</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Quantity</th>
+                  <th>Unit Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in bill_items %}
+                <tr>
+                  <td>{{ item.created_at.strftime('%Y-%m-%d') }}</td>
+                  <td>{{ item.description }}</td>
+                  <td>
+                    <span
+                      class="badge bg-{{ 'primary' if item.category == 'consultation' else 'info' if item.category == 'lab' else 'warning' if item.category == 'medicine' else 'secondary' }}"
+                    >
+                      {{ item.category.title() }}
+                    </span>
+                  </td>
+                  <td>{{ item.quantity or 1 }}</td>
+                  <td>${{ "%.2f"|format(item.unit_price or 0) }}</td>
+                  <td>${{ "%.2f"|format(item.total_price or 0) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Methods -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-credit-card"></i> Select Payment Method
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              <div
+                class="card h-100 border-primary payment-method"
+                onclick="selectPaymentMethod('cash')"
+              >
+                <div class="card-body text-center">
+                  <i class="fas fa-money-bill-wave fa-3x text-primary mb-3"></i>
+                  <h6>Cash</h6>
+                  <p class="text-muted small">Pay with cash</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div
+                class="card h-100 border-info payment-method"
+                onclick="selectPaymentMethod('card')"
+              >
+                <div class="card-body text-center">
+                  <i class="fas fa-credit-card fa-3x text-info mb-3"></i>
+                  <h6>Credit/Debit Card</h6>
+                  <p class="text-muted small">Pay with card</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div
+                class="card h-100 border-warning payment-method"
+                onclick="selectPaymentMethod('upi')"
+              >
+                <div class="card-body text-center">
+                  <i class="fas fa-mobile-alt fa-3x text-warning mb-3"></i>
+                  <h6>UPI</h6>
+                  <p class="text-muted small">Digital payment</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div
+                class="card h-100 border-success payment-method"
+                onclick="selectPaymentMethod('insurance')"
+              >
+                <div class="card-body text-center">
+                  <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
+                  <h6>Insurance</h6>
+                  <p class="text-muted small">Insurance claim</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Form -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-credit-card"></i> Process Payment
+          </h5>
+        </div>
+        <div class="card-body">
+          <form id="paymentForm">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Payment Method</label>
+                  <select
+                    class="form-select"
+                    id="paymentMethod"
+                    name="payment_method"
+                    required
+                  >
+                    <option value="">Select Payment Method</option>
+                    <option value="cash">Cash</option>
+                    <option value="card">Credit/Debit Card</option>
+                    <option value="upi">UPI</option>
+                    <option value="insurance">Insurance</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Amount to Pay</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="paymentAmount"
+                      name="amount"
+                      step="0.01"
+                      min="0"
+                      max="{{ bill.balance_amount or 0 }}"
+                      value="{{ bill.balance_amount or 0 }}"
+                      required
+                    />
+                  </div>
+                  <small class="text-muted"
+                    >Balance: ${{ "%.2f"|format(bill.balance_amount or 0)
+                    }}</small
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Details (shown based on method) -->
+            <div id="paymentDetails">
+              <!-- Cash Payment -->
+              <div
+                id="cashDetails"
+                class="payment-details"
+                style="display: none"
+              >
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Cash Received</label>
+                      <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="cashReceived"
+                          name="cash_received"
+                          step="0.01"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Change Due</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="changeDue"
+                        readonly
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card Payment -->
+              <div
+                id="cardDetails"
+                class="payment-details"
+                style="display: none"
+              >
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Card Number</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="cardNumber"
+                        name="card_number"
+                        placeholder="1234 5678 9012 3456"
+                        maxlength="19"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Cardholder Name</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="cardholderName"
+                        name="cardholder_name"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="mb-3">
+                      <label class="form-label">Expiry Date</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="expiryDate"
+                        name="expiry_date"
+                        placeholder="MM/YY"
+                        maxlength="5"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="mb-3">
+                      <label class="form-label">CVV</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="cvv"
+                        name="cvv"
+                        placeholder="123"
+                        maxlength="3"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="mb-3">
+                      <label class="form-label">Card Type</label>
+                      <select
+                        class="form-select"
+                        id="cardType"
+                        name="card_type"
+                      >
+                        <option value="visa">Visa</option>
+                        <option value="mastercard">Mastercard</option>
+                        <option value="amex">American Express</option>
+                        <option value="discover">Discover</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- UPI Payment -->
+              <div
+                id="upiDetails"
+                class="payment-details"
+                style="display: none"
+              >
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">UPI ID</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="upiId"
+                        name="upi_id"
+                        placeholder="yourname@upi"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Transaction ID</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="transactionId"
+                        name="transaction_id"
+                        placeholder="Optional"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Insurance Payment -->
+              <div
+                id="insuranceDetails"
+                class="payment-details"
+                style="display: none"
+              >
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Insurance Provider</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="insuranceProvider"
+                        name="insurance_provider"
+                        value="{{ patient.insurance_provider or '' }}"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Policy Number</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="policyNumber"
+                        name="policy_number"
+                        value="{{ patient.insurance_policy or '' }}"
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Claim Amount</label>
+                      <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="claimAmount"
+                          name="claim_amount"
+                          step="0.01"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Patient Responsibility</label>
+                      <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="patientResponsibility"
+                          name="patient_responsibility"
+                          step="0.01"
+                          min="0"
+                          readonly
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mt-4">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Payment Reference</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="paymentReference"
+                    name="payment_reference"
+                    placeholder="Optional reference number"
+                  />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Notes</label>
+                  <textarea
+                    class="form-control"
+                    id="paymentNotes"
+                    name="notes"
+                    rows="2"
+                    placeholder="Additional notes..."
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-end">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="resetPaymentForm()"
+              >
+                Reset
+              </button>
+              <button type="submit" class="btn btn-success">
+                <i class="fas fa-credit-card"></i> Process Payment
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment History -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-history"></i> Payment History</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Payment Method</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Reference</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for payment in payments %}
+                <tr>
+                  <td>{{ payment.payment_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td>
+                    <span
+                      class="badge bg-{{ 'success' if payment.status == 'completed' else 'warning' }}"
+                    >
+                      {{ payment.payment_method.title() }}
+                    </span>
+                  </td>
+                  <td>${{ "%.2f"|format(payment.amount) }}</td>
+                  <td>
+                    <span
+                      class="badge bg-{{ 'success' if payment.status == 'completed' else 'warning' }}"
+                    >
+                      {{ payment.status.title() }}
+                    </span>
+                  </td>
+                  <td>{{ payment.reference or 'N/A' }}</td>
+                  <td>
+                    <button
+                      class="btn btn-sm btn-outline-primary"
+                      onclick="viewPayment('{{ payment.id }}')"
+                    >
+                      <i class="fas fa-eye"></i> View
+                    </button>
+                    {% if payment.status == 'completed' %}
+                    <button
+                      class="btn btn-sm btn-outline-info"
+                      onclick="printReceipt('{{ payment.id }}')"
+                    >
+                      <i class="fas fa-print"></i> Print
+                    </button>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Success Modal -->
+<div class="modal fade" id="paymentSuccessModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-check-circle"></i> Payment Successful
+        </h5>
+        <button
+          type="button"
+          class="btn-close btn-close-white"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body" id="paymentSuccessContent">
+        <!-- Content will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let selectedPaymentMethod = '';
+
+  function selectPaymentMethod(method) {
+      selectedPaymentMethod = method;
+
+      // Update UI
+      document.querySelectorAll('.payment-method').forEach(card => {
+          card.classList.remove('border-primary', 'border-info', 'border-warning', 'border-success');
+          card.classList.add('border-secondary');
+      });
+
+      const selectedCard = document.querySelector(`.payment-method:has(onclick="selectPaymentMethod('${method}')")`);
+      if (selectedCard) {
+          selectedCard.classList.remove('border-secondary');
+          selectedCard.classList.add(`border-${method === 'cash' ? 'primary' : method === 'card' ? 'info' : method === 'upi' ? 'warning' : 'success'}`);
+      }
+
+      // Update form
+      document.getElementById('paymentMethod').value = method;
+
+      // Show/hide payment details
+      document.querySelectorAll('.payment-details').forEach(detail => {
+          detail.style.display = 'none';
+      });
+
+      if (method === 'cash') {
+          document.getElementById('cashDetails').style.display = 'block';
+      } else if (method === 'card') {
+          document.getElementById('cardDetails').style.display = 'block';
+      } else if (method === 'upi') {
+          document.getElementById('upiDetails').style.display = 'block';
+      } else if (method === 'insurance') {
+          document.getElementById('insuranceDetails').style.display = 'block';
+      }
+  }
+
+  function resetPaymentForm() {
+      document.getElementById('paymentForm').reset();
+      document.querySelectorAll('.payment-details').forEach(detail => {
+          detail.style.display = 'none';
+      });
+      document.querySelectorAll('.payment-method').forEach(card => {
+          card.classList.remove('border-primary', 'border-info', 'border-warning', 'border-success');
+          card.classList.add('border-secondary');
+      });
+      selectedPaymentMethod = '';
+  }
+
+  function generateInvoice() {
+      Swal.fire({
+          title: 'Generate Invoice',
+          text: 'This will generate a detailed invoice for this bill',
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Generate Invoice',
+          cancelButtonText: 'Cancel'
+      }).then((result) => {
+          if (result.isConfirmed) {
+              // In a real application, this would generate the invoice
+              Swal.fire({
+                  title: 'Invoice Generated',
+                  text: 'Invoice has been generated successfully.',
+                  icon: 'success',
+                  confirmButtonText: 'OK'
+              });
+          }
+      });
+  }
+
+  function viewPayment(paymentId) {
+      // In a real application, this would show payment details
+      Swal.fire({
+          title: 'Payment Details',
+          text: `Payment ID: ${paymentId}`,
+          icon: 'info',
+          confirmButtonText: 'OK'
+      });
+  }
+
+  function printReceipt(paymentId) {
+      // In a real application, this would print the receipt
+      window.open(`/payment/${paymentId}/print`, '_blank');
+  }
+
+  // Handle payment form submission
+  document.getElementById('paymentForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      // Validate form
+      const paymentMethod = document.getElementById('paymentMethod').value;
+      const amount = parseFloat(document.getElementById('paymentAmount').value);
+
+      if (!paymentMethod || amount <= 0) {
+          Swal.fire({
+              title: 'Validation Error',
+              text: 'Please select a payment method and enter a valid amount.',
+              icon: 'error',
+              confirmButtonText: 'OK'
+          });
+          return;
+      }
+
+      // Process payment
+      Swal.fire({
+          title: 'Processing Payment',
+          text: 'Please wait while we process your payment...',
+          icon: 'info',
+          showConfirmButton: false,
+          allowOutsideClick: false,
+          timer: 2000
+      }).then(() => {
+          // Show success modal
+          const modal = new bootstrap.Modal(document.getElementById('paymentSuccessModal'));
+          document.getElementById('paymentSuccessContent').innerHTML =
+              '<div class="text-center">' +
+                  '<i class="fas fa-check-circle text-success fa-4x mb-3"></i>' +
+                  '<h4>Payment Successful!</h4>' +
+                  '<p class="mb-3">Payment of $' + amount.toFixed(2) + ' has been processed successfully.</p>' +
+                  '<div class="row">' +
+                      '<div class="col-md-6">' +
+                          '<p><strong>Payment Method:</strong> ' + (paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)) + '</p>' +
+                          '<p><strong>Transaction ID:</strong> TXN-' + Date.now() + '</p>' +
+                      '</div>' +
+                      '<div class="col-md-6">' +
+                          '<p><strong>Date:</strong> ' + new Date().toLocaleString() + '</p>' +
+                          '<p><strong>Status:</strong> <span class="badge bg-success">Completed</span></p>' +
+                      '</div>' +
+                  '</div>' +
+                  '<div class="mt-4">' +
+                      '<button class="btn btn-primary me-2" onclick="printReceipt()">' +
+                          '<i class="fas fa-print"></i> Print Receipt' +
+                      '</button>' +
+                      '<button class="btn btn-secondary" onclick="emailReceipt()">' +
+                          '<i class="fas fa-envelope"></i> Email Receipt' +
+                      '</button>' +
+                  '</div>' +
+              '</div>';
+          modal.show();
+      });
+  });
+
+  // Handle cash payment calculation
+  document.getElementById('cashReceived')?.addEventListener('input', function() {
+      const cashReceived = parseFloat(this.value) || 0;
+      const amount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+      const changeDue = cashReceived - amount;
+      document.getElementById('changeDue').value = changeDue >= 0 ? `$${changeDue.toFixed(2)}` : 'Insufficient cash';
+  });
+
+  // Handle insurance calculation
+  document.getElementById('claimAmount')?.addEventListener('input', function() {
+      const claimAmount = parseFloat(this.value) || 0;
+      const totalAmount = parseFloat('{{ bill.total_amount or 0 }}');
+      const patientResponsibility = totalAmount - claimAmount;
+      document.getElementById('patientResponsibility').value = Math.max(0, patientResponsibility).toFixed(2);
+  });
+
+  // Format card number
+  document.getElementById('cardNumber')?.addEventListener('input', function() {
+      let value = this.value.replace(/\s/g, '');
+      let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+      this.value = formattedValue;
+  });
+
+  // Format expiry date
+  document.getElementById('expiryDate')?.addEventListener('input', function() {
+      let value = this.value.replace(/\D/g, '');
+      if (value.length >= 2) {
+          value = value.substring(0, 2) + '/' + value.substring(2, 4);
+      }
+      this.value = value;
+  });
+
+  // Print receipt function
+  function printReceipt() {
+      window.print();
+  }
+
+  // Email receipt function
+  function emailReceipt() {
+      Swal.fire({
+          title: 'Email Receipt',
+          text: 'Receipt will be sent to patient email',
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: 'Send Email',
+          cancelButtonText: 'Cancel'
+      }).then((result) => {
+          if (result.isConfirmed) {
+              Swal.fire({
+                  title: 'Email Sent',
+                  text: 'Receipt has been sent successfully.',
+                  icon: 'success',
+                  confirmButtonText: 'OK'
+              });
+          }
+      });
+  }
+</script>
+
+<style>
+  .payment-method {
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .payment-method:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .payment-method.selected {
+    border: 3px solid;
+  }
+</style>
+{% endblock %}

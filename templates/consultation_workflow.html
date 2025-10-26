@@ -1,0 +1,950 @@
+{% extends "base.html" %} {% block title %}Consultation Workflow - {{
+get_text('title') }}{% endblock %} {% block content %}
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2>
+        <i class="fas fa-stethoscope text-primary"></i>
+        Patient Consultation Workflow
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('patients') }}">Patients</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('ehr', patient_id=patient.id) }}"
+              >Patient EHR</a
+            >
+          </li>
+          <li class="breadcrumb-item active">Consultation</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-md-4 text-end">
+      <div class="btn-group" role="group">
+        <a
+          href="{{ url_for('ehr', patient_id=patient.id) }}"
+          class="btn btn-outline-secondary"
+        >
+          <i class="fas fa-arrow-left"></i> Back to EHR
+        </a>
+        <button class="btn btn-primary" onclick="completeConsultation()">
+          <i class="fas fa-check"></i> Complete Consultation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consultation Status -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Consultation Process</h5>
+          <div class="progress mb-3" style="height: 30px">
+            <div
+              class="progress-bar bg-primary"
+              role="progressbar"
+              style="width: 60%"
+              aria-valuenow="60"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
+              <span class="fw-bold">Step 3: Treatment Planning</span>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between">
+            <div class="text-center">
+              <i class="fas fa-user-md text-primary fa-2x"></i>
+              <h6 class="mt-2">Step 1: Consultation</h6>
+            </div>
+            <div class="text-center">
+              <i class="fas fa-clipboard-list text-primary fa-2x"></i>
+              <h6 class="mt-2">Step 2: Diagnosis</h6>
+            </div>
+            <div class="text-center">
+              <i class="fas fa-pills text-primary fa-2x"></i>
+              <h6 class="mt-2">Step 3: Treatment</h6>
+            </div>
+            <div class="text-center">
+              <i class="fas fa-check-circle text-muted fa-2x"></i>
+              <h6 class="mt-2">Step 4: Complete</h6>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Patient and Appointment Info -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="fas fa-user"></i> Patient Information</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Patient ID:</strong> {{ patient.patient_id }}</p>
+              <p>
+                <strong>Name:</strong> {{ patient.first_name }} {{
+                patient.last_name }}
+              </p>
+              <p>
+                <strong>Age:</strong> {{ ((datetime.now().date() -
+                patient.date_of_birth).days // 365) if patient.date_of_birth
+                else 'N/A' }}
+              </p>
+              <p>
+                <strong>Gender:</strong> {{ patient.gender or 'Not specified' }}
+              </p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Phone:</strong> {{ patient.phone }}</p>
+              <p>
+                <strong>Email:</strong> {{ patient.email or 'Not provided' }}
+              </p>
+              <p>
+                <strong>Blood Group:</strong> {{ patient.blood_group or 'Not
+                specified' }}
+              </p>
+              <p>
+                <strong>Allergies:</strong> {{ patient.allergies or 'None
+                reported' }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-calendar-alt"></i> Appointment Details
+          </h5>
+        </div>
+        <div class="card-body">
+          <p><strong>Doctor:</strong> {{ doctor.full_name }}</p>
+          <p>
+            <strong>Date:</strong> {{
+            appointment.appointment_date.strftime('%Y-%m-%d') }}
+          </p>
+          <p>
+            <strong>Time:</strong> {{
+            appointment.appointment_date.strftime('%I:%M %p') }}
+          </p>
+          <p>
+            <strong>Type:</strong> {{ appointment.appointment_type.title() }}
+          </p>
+          <p>
+            <strong>Status:</strong>
+            <span
+              class="badge bg-{{ 'success' if appointment.status == 'completed' else 'warning' }}"
+            >
+              {{ appointment.status.title() }}
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consultation Form -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-notes-medical"></i> Consultation Details
+          </h5>
+        </div>
+        <div class="card-body">
+          <form id="consultationForm">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Chief Complaint</label>
+                  <textarea
+                    class="form-control"
+                    name="chief_complaint"
+                    rows="3"
+                    placeholder="Describe the main reason for visit..."
+                    required
+                  ></textarea>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Presenting Symptoms</label>
+                  <textarea
+                    class="form-control"
+                    name="symptoms"
+                    rows="3"
+                    placeholder="List all symptoms..."
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">History of Present Illness</label>
+                  <textarea
+                    class="form-control"
+                    name="history_present"
+                    rows="4"
+                    placeholder="Detailed description of current illness..."
+                  ></textarea>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Past Medical History</label>
+                  <textarea class="form-control" name="history_past" rows="4">
+{{ patient.medical_history or '' }}</textarea
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Vital Signs</label>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <input
+                        type="text"
+                        class="form-control"
+                        name="vital_bp"
+                        placeholder="Blood Pressure"
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <input
+                        type="text"
+                        class="form-control"
+                        name="vital_hr"
+                        placeholder="Heart Rate"
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <input
+                        type="text"
+                        class="form-control"
+                        name="vital_temp"
+                        placeholder="Temperature"
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <input
+                        type="text"
+                        class="form-control"
+                        name="vital_rr"
+                        placeholder="Respiratory Rate"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Physical Examination</label>
+                  <textarea
+                    class="form-control"
+                    name="physical_exam"
+                    rows="4"
+                    placeholder="Findings from physical examination..."
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Provisional Diagnosis</label>
+              <input
+                type="text"
+                class="form-control"
+                name="diagnosis"
+                placeholder="Enter diagnosis..."
+              />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Differential Diagnosis</label>
+              <textarea
+                class="form-control"
+                name="differential_diagnosis"
+                rows="3"
+                placeholder="List possible diagnoses..."
+              ></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Treatment Plan</label>
+              <textarea
+                class="form-control"
+                name="treatment_plan"
+                rows="4"
+                placeholder="Outline treatment plan..."
+              ></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Medications Prescribed</label>
+              <div id="medicationsList">
+                <div class="row mb-2">
+                  <div class="col-md-3">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="medication_name[]"
+                      placeholder="Medication name"
+                    />
+                  </div>
+                  <div class="col-md-2">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="medication_dosage[]"
+                      placeholder="Dosage"
+                    />
+                  </div>
+                  <div class="col-md-2">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="medication_frequency[]"
+                      placeholder="Frequency"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="medication_duration[]"
+                      placeholder="Duration"
+                    />
+                  </div>
+                  <div class="col-md-2">
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger btn-sm"
+                      onclick="removeMedication(this)"
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                onclick="addMedication()"
+              >
+                <i class="fas fa-plus"></i> Add Medication
+              </button>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Investigations Ordered</label>
+              <div id="investigationsList">
+                <div class="row mb-2">
+                  <div class="col-md-6">
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="investigation_name[]"
+                      placeholder="Test name"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <select class="form-select" name="investigation_type[]">
+                      <option value="lab">Lab Test</option>
+                      <option value="imaging">Imaging</option>
+                      <option value="procedure">Procedure</option>
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger btn-sm"
+                      onclick="removeInvestigation(this)"
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                onclick="addInvestigation()"
+              >
+                <i class="fas fa-plus"></i> Add Investigation
+              </button>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Follow-up Instructions</label>
+              <textarea
+                class="form-control"
+                name="followup_instructions"
+                rows="3"
+                placeholder="Follow-up instructions..."
+              ></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Notes</label>
+              <textarea
+                class="form-control"
+                name="notes"
+                rows="3"
+                placeholder="Additional notes..."
+              ></textarea>
+            </div>
+
+            <div class="text-end">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="saveDraft()"
+              >
+                Save Draft
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Save Consultation
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              <div class="card h-100 border-primary">
+                <div class="card-body text-center">
+                  <i class="fas fa-flask fa-3x text-primary mb-3"></i>
+                  <h6>Order Lab Tests</h6>
+                  <p class="text-muted small">Quick lab test ordering</p>
+                  <button
+                    class="btn btn-primary btn-sm"
+                    onclick="quickOrderLab()"
+                  >
+                    <i class="fas fa-plus"></i> Order Tests
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card h-100 border-info">
+                <div class="card-body text-center">
+                  <i class="fas fa-x-ray fa-3x text-info mb-3"></i>
+                  <h6>Order Imaging</h6>
+                  <p class="text-muted small">Quick imaging ordering</p>
+                  <button
+                    class="btn btn-info btn-sm"
+                    onclick="quickOrderImaging()"
+                  >
+                    <i class="fas fa-plus"></i> Order Imaging
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card h-100 border-warning">
+                <div class="card-body text-center">
+                  <i class="fas fa-prescription fa-3x text-warning mb-3"></i>
+                  <h6>Prescribe</h6>
+                  <p class="text-muted small">Quick prescription</p>
+                  <button
+                    class="btn btn-warning btn-sm"
+                    onclick="quickPrescribe()"
+                  >
+                    <i class="fas fa-plus"></i> Prescribe
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card h-100 border-success">
+                <div class="card-body text-center">
+                  <i class="fas fa-calendar-check fa-3x text-success mb-3"></i>
+                  <h6>Schedule Follow-up</h6>
+                  <p class="text-muted small">Schedule next visit</p>
+                  <button
+                    class="btn btn-success btn-sm"
+                    onclick="scheduleFollowup()"
+                  >
+                    <i class="fas fa-plus"></i> Schedule
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lab Order Modal -->
+<div class="modal fade" id="labOrderModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Order Lab Tests</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body" id="labOrderContent">
+        <!-- Content will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Imaging Order Modal -->
+<div class="modal fade" id="imagingOrderModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Order Imaging Tests</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body" id="imagingOrderContent">
+        <!-- Content will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Prescription Modal -->
+<div class="modal fade" id="prescriptionModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Create Prescription</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body" id="prescriptionContent">
+        <!-- Content will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Follow-up Modal -->
+<div class="modal fade" id="followupModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Schedule Follow-up</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body" id="followupContent">
+        <!-- Content will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function addMedication() {
+    const medicationsList = document.getElementById("medicationsList");
+    const newMedication = document.createElement("div");
+    newMedication.className = "row mb-2";
+    newMedication.innerHTML = `
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="medication_name[]" placeholder="Medication name">
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control" name="medication_dosage[]" placeholder="Dosage">
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control" name="medication_frequency[]" placeholder="Frequency">
+            </div>
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="medication_duration[]" placeholder="Duration">
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeMedication(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+    medicationsList.appendChild(newMedication);
+  }
+
+  function removeMedication(button) {
+    button.closest(".row").remove();
+  }
+
+  function addInvestigation() {
+    const investigationsList = document.getElementById("investigationsList");
+    const newInvestigation = document.createElement("div");
+    newInvestigation.className = "row mb-2";
+    newInvestigation.innerHTML = `
+            <div class="col-md-6">
+                <input type="text" class="form-control" name="investigation_name[]" placeholder="Test name">
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" name="investigation_type[]">
+                    <option value="lab">Lab Test</option>
+                    <option value="imaging">Imaging</option>
+                    <option value="procedure">Procedure</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeInvestigation(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+    investigationsList.appendChild(newInvestigation);
+  }
+
+  function removeInvestigation(button) {
+    button.closest(".row").remove();
+  }
+
+  function quickOrderLab() {
+    const modal = new bootstrap.Modal(document.getElementById("labOrderModal"));
+    document.getElementById("labOrderContent").innerHTML = `
+            <form id="quickLabOrderForm">
+                <div class="mb-3">
+                    <label class="form-label">Select Lab Tests</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="lab_tests[]" value="cbc" id="cbc">
+                        <label class="form-check-label" for="cbc">Complete Blood Count (CBC)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="lab_tests[]" value="lipid" id="lipid">
+                        <label class="form-check-label" for="lipid">Lipid Profile</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="lab_tests[]" value="lft" id="lft">
+                        <label class="form-check-label" for="lft">Liver Function Test</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="lab_tests[]" value="kft" id="kft">
+                        <label class="form-check-label" for="kft">Kidney Function Test</label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Urgency</label>
+                    <select class="form-select" name="urgency">
+                        <option value="routine">Routine</option>
+                        <option value="stat">STAT</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+                <div class="text-end">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Order Tests</button>
+                </div>
+            </form>
+        `;
+    modal.show();
+  }
+
+  function quickOrderImaging() {
+    const modal = new bootstrap.Modal(
+      document.getElementById("imagingOrderModal")
+    );
+    document.getElementById("imagingOrderContent").innerHTML = `
+            <form id="quickImagingOrderForm">
+                <div class="mb-3">
+                    <label class="form-label">Select Imaging Tests</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="imaging_tests[]" value="xray" id="xray">
+                        <label class="form-check-label" for="xray">X-Ray</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="imaging_tests[]" value="ct" id="ct">
+                        <label class="form-check-label" for="ct">CT Scan</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="imaging_tests[]" value="mri" id="mri">
+                        <label class="form-check-label" for="mri">MRI</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="imaging_tests[]" value="usg" id="usg">
+                        <label class="form-check-label" for="usg">Ultrasound</label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Area of Interest</label>
+                    <input type="text" class="form-control" name="area" placeholder="e.g., Chest, Abdomen, Head">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Contrast Required</label>
+                    <select class="form-select" name="contrast">
+                        <option value="no">No</option>
+                        <option value="yes">Yes</option>
+                        <option value="optional">Optional</option>
+                    </select>
+                </div>
+                <div class="text-end">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Order Imaging</button>
+                </div>
+            </form>
+        `;
+    modal.show();
+  }
+
+  function quickPrescribe() {
+    const modal = new bootstrap.Modal(
+      document.getElementById("prescriptionModal")
+    );
+    document.getElementById("prescriptionContent").innerHTML = `
+            <form id="quickPrescriptionForm">
+                <div class="mb-3">
+                    <label class="form-label">Medications</label>
+                    <div id="quickMedicationsList">
+                        <div class="row mb-2">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" name="medication_name[]" placeholder="Medication name">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" name="medication_dosage[]" placeholder="Dosage">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" name="medication_frequency[]" placeholder="Frequency">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeQuickMedication(this)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuickMedication()">
+                        <i class="fas fa-plus"></i> Add Medication
+                    </button>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Instructions</label>
+                    <textarea class="form-control" name="instructions" rows="3" placeholder="Patient instructions..."></textarea>
+                </div>
+                <div class="text-end">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Prescription</button>
+                </div>
+            </form>
+        `;
+    modal.show();
+  }
+
+  function addQuickMedication() {
+    const medicationsList = document.getElementById("quickMedicationsList");
+    const newMedication = document.createElement("div");
+    newMedication.className = "row mb-2";
+    newMedication.innerHTML = `
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="medication_name[]" placeholder="Medication name">
+            </div>
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="medication_dosage[]" placeholder="Dosage">
+            </div>
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="medication_frequency[]" placeholder="Frequency">
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeQuickMedication(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+    medicationsList.appendChild(newMedication);
+  }
+
+  function removeQuickMedication(button) {
+    button.closest(".row").remove();
+  }
+
+  function scheduleFollowup() {
+    const modal = new bootstrap.Modal(document.getElementById("followupModal"));
+    document.getElementById("followupContent").innerHTML = `
+            <form id="followupForm">
+                <div class="mb-3">
+                    <label class="form-label">Follow-up Date</label>
+                    <input type="date" class="form-control" name="followup_date" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Follow-up Time</label>
+                    <input type="time" class="form-control" name="followup_time" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Reason for Follow-up</label>
+                    <textarea class="form-control" name="reason" rows="3" placeholder="Reason for follow-up..."></textarea>
+                </div>
+                <div class="text-end">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Schedule Follow-up</button>
+                </div>
+            </form>
+        `;
+    modal.show();
+  }
+
+  function completeConsultation() {
+    Swal.fire({
+      title: "Complete Consultation",
+      text: "Are you sure you want to complete this consultation?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Complete",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        document.getElementById("consultationForm").submit();
+      }
+    });
+  }
+
+  function saveDraft() {
+    Swal.fire({
+      title: "Save Draft",
+      text: "Consultation draft will be saved for later completion.",
+      icon: "info",
+      confirmButtonText: "Save Draft",
+      showCancelButton: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // In a real application, this would save the draft
+        Swal.fire({
+          title: "Draft Saved",
+          text: "Consultation draft has been saved successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+        });
+      }
+    });
+  }
+
+  // Handle form submissions
+  document.addEventListener("DOMContentLoaded", function () {
+    // Consultation form
+    document
+      .getElementById("consultationForm")
+      .addEventListener("submit", function (e) {
+        e.preventDefault();
+        // In a real application, this would submit the form via AJAX
+        Swal.fire({
+          title: "Consultation Saved",
+          text: "Consultation has been saved successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+        });
+      });
+
+    // Quick lab order form
+    document.addEventListener("submit", function (e) {
+      if (e.target.id === "quickLabOrderForm") {
+        e.preventDefault();
+        // In a real application, this would submit the form via AJAX
+        Swal.fire({
+          title: "Lab Tests Ordered",
+          text: "Lab tests have been ordered successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+        }).then(() => {
+          bootstrap.Modal.getInstance(
+            document.getElementById("labOrderModal")
+          ).hide();
+        });
+      }
+    });
+
+    // Quick imaging order form
+    document.addEventListener("submit", function (e) {
+      if (e.target.id === "quickImagingOrderForm") {
+        e.preventDefault();
+        // In a real application, this would submit the form via AJAX
+        Swal.fire({
+          title: "Imaging Tests Ordered",
+          text: "Imaging tests have been ordered successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+        }).then(() => {
+          bootstrap.Modal.getInstance(
+            document.getElementById("imagingOrderModal")
+          ).hide();
+        });
+      }
+    });
+
+    // Quick prescription form
+    document.addEventListener("submit", function (e) {
+      if (e.target.id === "quickPrescriptionForm") {
+        e.preventDefault();
+        // In a real application, this would submit the form via AJAX
+        Swal.fire({
+          title: "Prescription Created",
+          text: "Prescription has been created successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+        }).then(() => {
+          bootstrap.Modal.getInstance(
+            document.getElementById("prescriptionModal")
+          ).hide();
+        });
+      }
+    });
+
+    // Follow-up form
+    document.addEventListener("submit", function (e) {
+      if (e.target.id === "followupForm") {
+        e.preventDefault();
+        // In a real application, this would submit the form via AJAX
+        Swal.fire({
+          title: "Follow-up Scheduled",
+          text: "Follow-up appointment has been scheduled successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+        }).then(() => {
+          bootstrap.Modal.getInstance(
+            document.getElementById("followupModal")
+          ).hide();
+        });
+      }
+    });
+  });
+</script>
+{% endblock %}

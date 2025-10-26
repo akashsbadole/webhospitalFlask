@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Gateway - Hospital Management System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-credit-card"></i> Online Payment</h4>
+                </div>
+                <div class="card-body">
+                    {% if bill %}
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Bill Details</h5>
+                            <p><strong>Bill Number:</strong> {{ bill.bill_number }}</p>
+                            <p><strong>Patient:</strong> {{ bill.patient.first_name }} {{ bill.patient.last_name }}</p>
+                            <p><strong>Bill Date:</strong> {{ bill.bill_date.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Amount Details</h5>
+                            <p><strong>Total Amount:</strong> ${{ "%.2f"|format(bill.total_amount) }}</p>
+                            <p><strong>Paid Amount:</strong> ${{ "%.2f"|format(bill.paid_amount) }}</p>
+                            <p><strong>Balance Due:</strong> <span class="text-danger">${{
+                                    "%.2f"|format(bill.balance_amount) }}</span></p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3">Select Payment Method</h5>
+
+                    <div class="row">
+                        <!-- Stripe Payment -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card payment-method-card" onclick="selectPaymentMethod('stripe')">
+                                <div class="card-body text-center">
+                                    <i class="fab fa-stripe fa-3x text-primary"></i>
+                                    <h6 class="mt-2">Credit/Debit Card</h6>
+                                    <small class="text-muted">Powered by Stripe</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Razorpay Payment -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card payment-method-card" onclick="selectPaymentMethod('razorpay')">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-wallet fa-3x text-info"></i>
+                                    <h6 class="mt-2">UPI / Wallet</h6>
+                                    <small class="text-muted">Powered by Razorpay</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PayPal Payment -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card payment-method-card" onclick="selectPaymentMethod('paypal')">
+                                <div class="card-body text-center">
+                                    <i class="fab fa-paypal fa-3x text-primary"></i>
+                                    <h6 class="mt-2">PayPal</h6>
+                                    <small class="text-muted">International Payments</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Form -->
+                    <div id="paymentForm" style="display: none;">
+                        <form method="POST" action="{{ url_for('process_online_payment', bill_id=bill.id) }}"
+                            id="payment-form">
+                            <input type="hidden" name="payment_method" id="payment_method">
+                            <input type="hidden" name="amount" value="{{ bill.balance_amount }}">
+
+                            <div class="form-group">
+                                <label>Amount to Pay</label>
+                                <input type="number" name="payment_amount" class="form-control"
+                                    value="{{ bill.balance_amount }}" step="0.01" max="{{ bill.balance_amount }}"
+                                    required>
+                            </div>
+
+                            <div id="card-element" class="form-control" style="height: 40px; padding-top: 10px;"></div>
+                            <div id="card-errors" class="text-danger mt-2"></div>
+
+                            <div class="form-group mt-3">
+                                <button type="submit" class="btn btn-success btn-block" id="submit-payment">
+                                    <i class="fas fa-lock"></i> Pay Securely
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-block" onclick="cancelPayment()">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-shield-alt"></i>
+                        <strong>Secure Payment:</strong> All transactions are encrypted and secure.
+                        Your payment information is never stored on our servers.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Bill not found or already paid.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .payment-method-card {
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 2px solid #dee2e6;
+    }
+
+    .payment-method-card:hover {
+        border-color: #007bff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .payment-method-card.selected {
+        border-color: #28a745;
+        background-color: #f8f9fa;
+    }
+</style>
+
+<script>
+    function selectPaymentMethod(method) {
+        document.getElementById('payment_method').value = method;
+        document.getElementById('paymentForm').style.display = 'block';
+
+        // Remove selected class from all cards
+        document.querySelectorAll('.payment-method-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+
+        // Add selected class to clicked card
+        event.currentTarget.classList.add('selected');
+
+        // Initialize payment gateway specific code
+        if (method === 'stripe') {
+            initializeStripe();
+        } else if (method === 'razorpay') {
+            initializeRazorpay();
+        } else if (method === 'paypal') {
+            initializePayPal();
+        }
+    }
+
+    function cancelPayment() {
+        document.getElementById('paymentForm').style.display = 'none';
+        document.querySelectorAll('.payment-method-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+    }
+
+    function initializeStripe() {
+        // Stripe initialization code would go here
+        console.log('Stripe initialized');
+    }
+
+    function initializeRazorpay() {
+        // Razorpay initialization code would go here
+        console.log('Razorpay initialized');
+    }
+
+    function initializePayPal() {
+        // PayPal initialization code would go here
+        console.log('PayPal initialized');
+    }
+</script>
+{% endblock %}

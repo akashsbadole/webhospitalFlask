@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Staff Management</h4>
+                    <a href="{{ url_for('add_staff') }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Add Staff Member
+                    </a>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select class="form-select" onchange="filterByRole(this.value)">
+                                <option value="">All Roles</option>
+                                <option value="doctor" {{ 'selected' if role_filter=='doctor' }}>Doctor</option>
+                                <option value="nurse" {{ 'selected' if role_filter=='nurse' }}>Nurse</option>
+                                <option value="receptionist" {{ 'selected' if role_filter=='receptionist' }}>
+                                    Receptionist</option>
+                                <option value="lab_tech" {{ 'selected' if role_filter=='lab_tech' }}>Lab Technician
+                                </option>
+                                <option value="pharmacist" {{ 'selected' if role_filter=='pharmacist' }}>Pharmacist
+                                </option>
+                                <option value="accountant" {{ 'selected' if role_filter=='accountant' }}>Accountant
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" placeholder="Search staff..."
+                                onkeyup="searchStaff(this.value)">
+                        </div>
+                    </div>
+
+                    <!-- Staff Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Employee ID</th>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Department</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Hire Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in staff.items %}
+                                <tr>
+                                    <td><strong>{{ member.employee_id }}</strong></td>
+                                    <td>
+                                        {{ member.full_name }}<br>
+                                        {% if member.specialization %}
+                                        <small class="text-muted">{{ member.specialization }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge bg-{{ 'primary' if member.role == 'doctor' else 'success' if member.role == 'nurse' else 'info' }}">
+                                            {{ member.role.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ member.department }}</td>
+                                    <td>{{ member.email }}</td>
+                                    <td>{{ member.phone or '-' }}</td>
+                                    <td>{{ member.hire_date.strftime('%Y-%m-%d') if member.hire_date else '-' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if member.is_active else 'danger' }}">
+                                            {{ 'Active' if member.is_active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="viewStaff({{ member.id }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-warning" onclick="editStaff({{ member.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        {% if member.role != 'admin' %}
+                                        <button class="btn btn-sm btn-{{ 'danger' if member.is_active else 'success' }}"
+                                            onclick="toggleStaffStatus({{ member.id }}, {{ member.is_active|lower }})">
+                                            <i class="fas fa-{{ 'ban' if member.is_active else 'check' }}"></i>
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if staff.pages > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if staff.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="{{ url_for('staff_management', page=staff.prev_num, role=role_filter) }}">Previous</a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in staff.iter_pages() %}
+                            {% if page_num %}
+                            {% if page_num != staff.page %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="{{ url_for('staff_management', page=page_num, role=role_filter) }}">{{
+                                    page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if staff.has_next %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="{{ url_for('staff_management', page=staff.next_num, role=role_filter) }}">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Staff Statistics -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Staff Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h3 class="text-primary">{{ total_doctors or 0 }}</h3>
+                            <p>Doctors</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h3 class="text-success">{{ total_nurses or 0 }}</h3>
+                            <p>Nurses</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h3 class="text-info">{{ total_lab_techs or 0 }}</h3>
+                            <p>Lab Techs</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h3 class="text-warning">{{ total_pharmacists or 0 }}</h3>
+                            <p>Pharmacists</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h3 class="text-secondary">{{ total_receptionists or 0 }}</h3>
+                            <p>Receptionists</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="text-center">
+                            <h3 class="text-dark">{{ total_others or 0 }}</h3>
+                            <p>Others</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterByRole(role) {
+        const url = new URL(window.location);
+        if (role) {
+            url.searchParams.set('role', role);
+        } else {
+            url.searchParams.delete('role');
+        }
+        window.location = url;
+    }
+
+    function searchStaff(query) {
+        // Implementation for search functionality
+        console.log('Search functionality:', query);
+    }
+
+    function viewStaff(staffId) {
+        // Implementation for viewing staff details
+        alert('View staff functionality - ID: ' + staffId);
+    }
+
+    function editStaff(staffId) {
+        // Implementation for editing staff
+        window.location.href = '/staff/edit/' + staffId;
+    }
+
+    function toggleStaffStatus(staffId, currentStatus) {
+        const action = currentStatus ? 'deactivate' : 'activate';
+        if (confirm(`Are you sure you want to ${action} this staff member?`)) {
+            fetch('/staff/' + staffId + '/toggle-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Failed to update staff status: ' + data.message);
+                    }
+                });
+        }
+    }
+</script>
+{% endblock %}

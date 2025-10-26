@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}Enquiries - {{ get_text('title') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2>
+                <i class="fas fa-envelope text-warning"></i>
+                {{ get_text('enquiries') }}
+            </h2>
+        </div>
+        <div class="col-md-6 text-end">
+            <div class="btn-group">
+                <button class="btn btn-outline-success" onclick="markAllRead()">
+                    <i class="fas fa-check-double"></i> Mark All Read
+                </button>
+                <button class="btn btn-outline-info" onclick="exportEnquiries()">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="">All Status</option>
+                                <option value="new" {{ 'selected' if status_filter == 'new' }}>New</option>
+                                <option value="in-progress" {{ 'selected' if status_filter == 'in-progress' }}>In Progress</option>
+                                <option value="resolved" {{ 'selected' if status_filter == 'resolved' }}>Resolved</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Type</label>
+                            <select class="form-select" name="type">
+                                <option value="">All Types</option>
+                                <option value="general">General</option>
+                                <option value="appointment">Appointment</option>
+                                <option value="emergency">Emergency</option>
+                                <option value="telemedicine">Telemedicine</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="d-grid d-md-flex gap-2 w-100">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                                <a href="{{ url_for('enquiries') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Enquiries List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Enquiry List
+                        <span class="badge bg-warning ms-2">{{ enquiries.total }} total</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if enquiries.items %}
+                    <div class="list-group list-group-flush">
+                        {% for enquiry in enquiries.items %}
+                        <div class="list-group-item {{ 'list-group-item-warning' if enquiry.status == 'new' }}">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-1">
+                                            {{ enquiry.subject }}
+                                            {% if enquiry.status == 'new' %}
+                                            <span class="badge bg-danger ms-2">NEW</span>
+                                            {% endif %}
+                                        </h6>
+                                        <small class="text-muted">{{ enquiry.created_at.strftime('%m/%d/%Y %I:%M %p') }}</small>
+                                    </div>
+                                    <p class="mb-1">
+                                        <strong>{{ enquiry.name }}</strong> 
+                                        <span class="text-muted">| {{ enquiry.email }} | {{ enquiry.phone }}</span>
+                                    </p>
+                                    <p class="mb-2 text-muted">{{ enquiry.message[:100] }}{% if enquiry.message|length > 100 %}...{% endif %}</p>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge bg-{{ 'info' if enquiry.enquiry_type == 'telemedicine' else 'primary' if enquiry.enquiry_type == 'appointment' else 'danger' if enquiry.enquiry_type == 'emergency' else 'secondary' }}">
+                                            {{ enquiry.enquiry_type.title() }}
+                                        </span>
+                                        <span class="badge bg-{{ 'success' if enquiry.status == 'resolved' else 'warning' if enquiry.status == 'in-progress' else 'danger' }}">
+                                            {{ enquiry.status.title() }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" onclick="viewEnquiry({{ enquiry.id }})">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                        {% if enquiry.status != 'resolved' %}
+                                        <button class="btn btn-outline-success" onclick="resolveEnquiry({{ enquiry.id }})">
+                                            <i class="fas fa-check"></i> Resolve
+                                        </button>
+                                        {% endif %}
+                                        <button class="btn btn-outline-info" onclick="replyEnquiry({{ enquiry.id }})">
+                                            <i class="fas fa-reply"></i> Reply
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if enquiries.pages > 1 %}
+                    <div class="card-footer">
+                        <nav aria-label="Enquiry pagination">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if enquiries.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('enquiries', page=enquiries.prev_num, status=status_filter) }}">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for page_num in enquiries.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != enquiries.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('enquiries', page=page_num, status=status_filter) }}">{{ page_num }}</a>
+                                        </li>
+                                        {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                        {% endif %}
+                                    {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if enquiries.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('enquiries', page=enquiries.next_num, status=status_filter) }}">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-envelope fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No enquiries found</h4>
+                        {% if status_filter %}
+                        <p class="text-muted">No enquiries match your filter criteria.</p>
+                        <a href="{{ url_for('enquiries') }}" class="btn btn-outline-primary">View All Enquiries</a>
+                        {% else %}
+                        <p class="text-muted">No enquiries have been submitted yet.</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enquiry Details Modal -->
+<div class="modal fade" id="enquiryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-envelope text-warning"></i> Enquiry Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="enquiryDetails">
+                <!-- Enquiry details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="resolveCurrentEnquiry()">
+                    <i class="fas fa-check"></i> Mark Resolved
+                </button>
+                <button type="button" class="btn btn-primary" onclick="replyCurrentEnquiry()">
+                    <i class="fas fa-reply"></i> Send Reply
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reply Modal -->
+<div class="modal fade" id="replyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-reply text-primary"></i> Reply to Enquiry
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="replyForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Reply Message</label>
+                        <textarea class="form-control" name="reply_message" rows="5" required 
+                                 placeholder="Type your reply here..."></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="mark_resolved" id="markResolved">
+                        <label class="form-check-label" for="markResolved">
+                            Mark enquiry as resolved after sending reply
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Send Reply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentEnquiryId = null;
+
+function viewEnquiry(enquiryId) {
+    currentEnquiryId = enquiryId;
+    const modal = new bootstrap.Modal(document.getElementById('enquiryModal'));
+    
+    document.getElementById('enquiryDetails').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-2">Loading enquiry details...</p>
+        </div>
+    `;
+    modal.show();
+    
+    // Simulate API call
+    setTimeout(() => {
+        document.getElementById('enquiryDetails').innerHTML = `
+            <div class="row">
+                <div class="col-12">
+                    <h6>Contact Information</h6>
+                    <p><strong>Name:</strong> John Doe</p>
+                    <p><strong>Email:</strong> john.doe@email.com</p>
+                    <p><strong>Phone:</strong> +1 234 567 8900</p>
+                    <p><strong>Type:</strong> <span class="badge bg-primary">General</span></p>
+                    <p><strong>Status:</strong> <span class="badge bg-warning">New</span></p>
+                    <hr>
+                    <h6>Subject</h6>
+                    <p>Appointment Booking Query</p>
+                    <h6>Message</h6>
+                    <p>I would like to book an appointment with a cardiologist. Please let me know the available slots for next week.</p>
+                    <hr>
+                    <small class="text-muted">Submitted on: March 15, 2024 at 2:30 PM</small>
+                </div>
+            </div>
+        `;
+    }, 1000);
+}
+
+function resolveEnquiry(enquiryId) {
+    if (confirm('Mark this enquiry as resolved?')) {
+        // In a real application, this would make an API call
+        alert('Enquiry marked as resolved!');
+        location.reload();
+    }
+}
+
+function resolveCurrentEnquiry() {
+    if (currentEnquiryId && confirm('Mark this enquiry as resolved?')) {
+        // In a real application, this would make an API call
+        alert('Enquiry marked as resolved!');
+        bootstrap.Modal.getInstance(document.getElementById('enquiryModal')).hide();
+        location.reload();
+    }
+}
+
+function replyEnquiry(enquiryId) {
+    currentEnquiryId = enquiryId;
+    const modal = new bootstrap.Modal(document.getElementById('replyModal'));
+    modal.show();
+}
+
+function replyCurrentEnquiry() {
+    if (currentEnquiryId) {
+        const modal = new bootstrap.Modal(document.getElementById('replyModal'));
+        modal.show();
+    }
+}
+
+// Reply form submission
+document.getElementById('replyForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    submitBtn.disabled = true;
+    
+    // Simulate API call
+    setTimeout(() => {
+        alert('Reply sent successfully!');
+        bootstrap.Modal.getInstance(document.getElementById('replyModal')).hide();
+        this.reset();
+        location.reload();
+    }, 2000);
+});
+
+function markAllRead() {
+    if (confirm('Mark all enquiries as read?')) {
+        // In a real application, this would make an API call
+        alert('All enquiries marked as read!');
+        location.reload();
+    }
+}
+
+function exportEnquiries() {
+    // Create CSV content
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "ID,Subject,Name,Email,Phone,Type,Status,Created At,Message\n";
+    
+    // Add enquiries data
+    {% for enquiry in enquiries.items %}
+    csvContent += "{{ enquiry.id }}","{{ enquiry.subject }}","{{ enquiry.name }}","{{ enquiry.email }}","{{ enquiry.phone }}","{{ enquiry.enquiry_type }}","{{ enquiry.status }}","{{ enquiry.created_at.strftime('%m/%d/%Y %I:%M %p') }}","{{ enquiry.message.replace('"', '""') }}"\n`;
+    {% endfor %}
+    
+    // Create download link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "enquiries_{{ datetime.now().strftime('%Y%m%d_%H%M%S') }}.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}

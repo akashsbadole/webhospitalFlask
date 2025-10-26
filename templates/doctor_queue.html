@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Queue{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Patient Queue - Dr. {{ current_user.full_name }}</h4>
+                </div>
+                <div class="card-body">
+                    {% if appointments %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Queue #</th>
+                                    <th>Check-in Time</th>
+                                    <th>Patient</th>
+                                    <th>Appointment Type</th>
+                                    <th>Waiting Time</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in appointments %}
+                                <tr>
+                                    <td><strong>{{ loop.index }}</strong></td>
+                                    <td>{{ appointment.check_in_time.strftime('%H:%M') if appointment.check_in_time else
+                                        '-' }}</td>
+                                    <td>
+                                        <strong>{{ appointment.patient.first_name }} {{ appointment.patient.last_name
+                                            }}</strong><br>
+                                        <small class="text-muted">{{ appointment.patient.patient_id }} | Age:
+                                            {% if appointment.patient.date_of_birth %}
+                                            {{ (appointment.appointment_date.date() -
+                                            appointment.patient.date_of_birth).days // 365 }}
+                                            {% else %}
+                                            N/A
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge bg-{{ 'info' if appointment.appointment_type == 'telemedicine' else 'primary' }}">
+                                            {{ appointment.appointment_type.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if appointment.check_in_time %}
+                                        <span class="waiting-time"
+                                            data-checkin="{{ appointment.check_in_time.isoformat() }}">
+                                            Calculating...
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">Not checked in</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('start_consultation', appointment_id=appointment.id) }}"
+                                            class="btn btn-sm btn-success">
+                                            <i class="fas fa-stethoscope"></i> Start Consultation
+                                        </a>
+
+                                        <button class="btn btn-sm btn-info"
+                                            onclick="viewPatientHistory({{ appointment.patient.id }})">
+                                            <i class="fas fa-history"></i> History
+                                        </button>
+
+                                        {% if appointment.appointment_type == 'telemedicine' and
+                                        appointment.meeting_link %}
+                                        <a href="{{ appointment.meeting_link }}" target="_blank"
+                                            class="btn btn-sm btn-primary">
+                                            <i class="fas fa-video"></i> Join Call
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-clock fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">No patients in queue</h5>
+                        <p class="text-muted">All caught up! No patients are currently waiting for consultation.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Queue Statistics -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Queue Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-primary">{{ appointments|length }}</h3>
+                            <p>Patients Waiting</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-success" id="avgWaitTime">-</h3>
+                            <p>Avg Wait Time</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-warning" id="longestWait">-</h3>
+                            <p>Longest Wait</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-info">{{ completed_today or 0 }}</h3>
+                            <p>Completed Today</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateWaitingTimes() {
+        const waitingTimeElements = document.querySelectorAll('.waiting-time');
+        const currentTime = new Date();
+        let totalWaitMinutes = 0;
+        let maxWaitMinutes = 0;
+        let patientCount = 0;
+
+        waitingTimeElements.forEach(element => {
+            const checkinTime = new Date(element.getAttribute('data-checkin'));
+            const waitMinutes = Math.floor((currentTime - checkinTime) / (1000 * 60));
+
+            const hours = Math.floor(waitMinutes / 60);
+            const minutes = waitMinutes % 60;
+
+            let timeString = '';
+            if (hours > 0) {
+                timeString = `${hours}h ${minutes}m`;
+            } else {
+                timeString = `${minutes}m`;
+            }
+
+            element.textContent = timeString;
+
+            // Color coding based on wait time
+            if (waitMinutes > 60) {
+                element.className = 'waiting-time text-danger';
+            } else if (waitMinutes > 30) {
+                element.className = 'waiting-time text-warning';
+            } else {
+                element.className = 'waiting-time text-success';
+            }
+
+            totalWaitMinutes += waitMinutes;
+            maxWaitMinutes = Math.max(maxWaitMinutes, waitMinutes);
+            patientCount++;
+        });
+
+        // Update statistics
+        if (patientCount > 0) {
+            const avgWaitMinutes = Math.floor(totalWaitMinutes / patientCount);
+            const avgHours = Math.floor(avgWaitMinutes / 60);
+            const avgMins = avgWaitMinutes % 60;
+
+            const maxHours = Math.floor(maxWaitMinutes / 60);
+            const maxMins = maxWaitMinutes % 60;
+
+            document.getElementById('avgWaitTime').textContent =
+                avgHours > 0 ? `${avgHours}h ${avgMins}m` : `${avgMins}m`;
+            document.getElementById('longestWait').textContent =
+                maxHours > 0 ? `${maxHours}h ${maxMins}m` : `${maxMins}m`;
+        }
+    }
+
+    function viewPatientHistory(patientId) {
+        window.location.href = '/ehr/' + patientId;
+    }
+
+    // Update waiting times every minute
+    setInterval(updateWaitingTimes, 60000);
+    updateWaitingTimes(); // Initial update
+
+    // Auto-refresh page every 5 minutes to get new check-ins
+    setInterval(() => {
+        location.reload();
+    }, 300000);
+</script>
+{% endblock %}

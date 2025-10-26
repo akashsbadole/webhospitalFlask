@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Dispense Medicine{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Dispense Medicine</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Prescription Information</h6>
+                            <p><strong>Prescription ID:</strong> {{ prescription.id }}</p>
+                            <p><strong>Patient:</strong> {{ prescription.patient.first_name }} {{
+                                prescription.patient.last_name }}</p>
+                            <p><strong>Doctor:</strong> {{ prescription.doctor.full_name }}</p>
+                            <p><strong>Date:</strong> {{ prescription.prescription_date.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Prescription Details</h6>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <p><strong>Medications:</strong></p>
+                                    <p>{{ prescription.medications }}</p>
+                                    <p><strong>Instructions:</strong></p>
+                                    <p>{{ prescription.instructions }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" id="dispenseForm">
+                        <h6>Dispensing Details</h6>
+                        <div id="medicine-items">
+                            <div class="row medicine-item mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Medicine</label>
+                                    <select class="form-select" name="medicine_id" required
+                                        onchange="updatePrice(this)">
+                                        <option value="">Select Medicine</option>
+                                        {% for medicine in medicines %}
+                                        <option value="{{ medicine.id }}" data-price="{{ medicine.selling_price }}"
+                                            data-stock="{{ medicine.stock_quantity }}">
+                                            {{ medicine.name }} - {{ medicine.strength }} (Stock: {{
+                                            medicine.stock_quantity }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Quantity</label>
+                                    <input type="number" class="form-control" name="quantity" min="1" required
+                                        onchange="calculateTotal(this)">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Unit Price</label>
+                                    <input type="number" class="form-control" name="unit_price" step="0.01" readonly>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Total</label>
+                                    <input type="number" class="form-control total-price" step="0.01" readonly>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="button" class="btn btn-success w-100" onclick="addMedicineItem()">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="discount" class="form-label">Discount (%)</label>
+                                    <input type="number" class="form-control" id="discount" name="discount" min="0"
+                                        max="100" step="0.01" value="0" onchange="calculateFinalTotal()">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="tax_amount" class="form-label">Tax Amount</label>
+                                    <input type="number" class="form-control" id="tax_amount" name="tax_amount"
+                                        step="0.01" value="0" onchange="calculateFinalTotal()">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6>Bill Summary</h6>
+                                        <p><strong>Subtotal:</strong> $<span id="subtotal">0.00</span></p>
+                                        <p><strong>Discount:</strong> $<span id="discount-amount">0.00</span></p>
+                                        <p><strong>Tax:</strong> $<span id="tax-display">0.00</span></p>
+                                        <hr>
+                                        <h5><strong>Total:</strong> $<span id="final-total">0.00</span></h5>
+                                        <input type="hidden" name="total_amount" id="total_amount">
+                                        <input type="hidden" name="final_amount" id="final_amount">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-pills"></i> Dispense Medicine
+                                </button>
+                                <a href="{{ url_for('pharmacy_orders') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Patient Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Name:</strong> {{ prescription.patient.first_name }} {{ prescription.patient.last_name }}
+                    </p>
+                    <p><strong>Patient ID:</strong> {{ prescription.patient.patient_id }}</p>
+                    <p><strong>Phone:</strong> {{ prescription.patient.phone }}</p>
+                    <p><strong>Age:</strong> {{ prescription.patient.date_of_birth.strftime('%Y-%m-%d') if
+                        prescription.patient.date_of_birth }}</p>
+                    <p><strong>Allergies:</strong> {{ prescription.patient.allergies or 'None' }}</p>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Dispensing Notes</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Verify patient identity</li>
+                        <li><i class="fas fa-check text-success"></i> Check medicine expiry</li>
+                        <li><i class="fas fa-check text-success"></i> Confirm dosage instructions</li>
+                        <li><i class="fas fa-check text-success"></i> Update stock levels</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updatePrice(selectElement) {
+        const row = selectElement.closest('.medicine-item');
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        const unitPriceInput = row.querySelector('input[name="unit_price"]');
+
+        if (selectedOption.value) {
+            const price = selectedOption.getAttribute('data-price');
+            unitPriceInput.value = price;
+            calculateTotal(row.querySelector('input[name="quantity"]'));
+        } else {
+            unitPriceInput.value = '';
+            row.querySelector('.total-price').value = '';
+        }
+    }
+
+    function calculateTotal(quantityInput) {
+        const row = quantityInput.closest('.medicine-item');
+        const unitPrice = parseFloat(row.querySelector('input[name="unit_price"]').value) || 0;
+        const quantity = parseInt(quantityInput.value) || 0;
+        const totalPriceInput = row.querySelector('.total-price');
+
+        const total = unitPrice * quantity;
+        totalPriceInput.value = total.toFixed(2);
+
+        calculateFinalTotal();
+    }
+
+    function calculateFinalTotal() {
+        let subtotal = 0;
+        document.querySelectorAll('.total-price').forEach(input => {
+            subtotal += parseFloat(input.value) || 0;
+        });
+
+        const discountPercent = parseFloat(document.getElementById('discount').value) || 0;
+        const taxAmount = parseFloat(document.getElementById('tax_amount').value) || 0;
+
+        const discountAmount = (subtotal * discountPercent) / 100;
+        const finalTotal = subtotal - discountAmount + taxAmount;
+
+        document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+        document.getElementById('discount-amount').textContent = discountAmount.toFixed(2);
+        document.getElementById('tax-display').textContent = taxAmount.toFixed(2);
+        document.getElementById('final-total').textContent = finalTotal.toFixed(2);
+
+        document.getElementById('total_amount').value = subtotal.toFixed(2);
+        document.getElementById('final_amount').value = finalTotal.toFixed(2);
+    }
+
+    function addMedicineItem() {
+        const container = document.getElementById('medicine-items');
+        const firstItem = container.querySelector('.medicine-item');
+        const newItem = firstItem.cloneNode(true);
+
+        // Clear values in new item
+        newItem.querySelectorAll('input, select').forEach(input => {
+            input.value = '';
+        });
+
+        // Change add button to remove button
+        const button = newItem.querySelector('button');
+        button.className = 'btn btn-danger w-100';
+        button.innerHTML = '<i class="fas fa-minus"></i>';
+        button.onclick = function () { removeMedicineItem(this); };
+
+        container.appendChild(newItem);
+    }
+
+    function removeMedicineItem(button) {
+        const item = button.closest('.medicine-item');
+        item.remove();
+        calculateFinalTotal();
+    }
+</script>
+{% endblock %}

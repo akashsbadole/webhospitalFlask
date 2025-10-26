@@ -1,0 +1,503 @@
+{% extends "base.html" %} {% block content %}
+<!-- Hero Section -->
+<div
+  class="hero-section py-5"
+  style="
+    background: linear-gradient(135deg, var(--primary-color), #1f5f7a);
+    color: white;
+  "
+>
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg-6">
+        <h1 class="display-4 fw-bold mb-4">{{ get_text('welcome') }}</h1>
+        <p class="lead mb-4 text-dark">
+          Advanced Hospital Management System with modern web interface,
+          telemedicine support, and comprehensive patient care solutions.
+        </p>
+        <div class="d-flex gap-3">
+          <a href="{{ url_for('login') }}" class="btn btn-dark btn-lg">
+            <i class="fas fa-sign-in-alt"></i> {{ get_text('login') }}
+          </a>
+          <button
+            class="btn btn-outline-primary btn-lg"
+            data-bs-toggle="modal"
+            data-bs-target="#enquiryModal"
+          >
+            <i class="fas fa-envelope"></i> Make Enquiry
+          </button>
+        </div>
+      </div>
+      <div class="col-lg-6 text-center">
+        <i
+          class="fas fa-hospital-alt"
+          style="font-size: 15rem; opacity: 0.3"
+        ></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Features Section -->
+<div class="container py-5">
+  <div class="row text-center mb-5">
+    <div class="col-12">
+      <h2 class="display-5 fw-bold text-primary mb-3">Our Services</h2>
+      <p class="lead text-muted">
+        Comprehensive healthcare management solutions
+      </p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card h-100 text-center">
+        <div class="card-body">
+          <div class="stats-icon bg-primary mx-auto mb-3">
+            <i class="fas fa-users"></i>
+          </div>
+          <h5 class="card-title">Patient Management</h5>
+          <p class="card-text">
+            Complete patient registration, medical history, and care
+            coordination system.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 text-center">
+        <div class="card-body">
+          <div class="stats-icon bg-success mx-auto mb-3">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <h5 class="card-title">Appointment Scheduling</h5>
+          <p class="card-text">
+            Smart appointment booking system with automated reminders and
+            scheduling.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 text-center">
+        <div class="card-body">
+          <div class="stats-icon bg-info mx-auto mb-3">
+            <i class="fas fa-video"></i>
+          </div>
+          <h5 class="card-title">Telemedicine</h5>
+          <p class="card-text">
+            Virtual consultations with integrated video calling and digital
+            prescriptions.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 text-center">
+        <div class="card-body">
+          <div class="stats-icon bg-warning mx-auto mb-3">
+            <i class="fas fa-file-medical"></i>
+          </div>
+          <h5 class="card-title">Medical Records</h5>
+          <p class="card-text">
+            Digital medical records with secure access and comprehensive history
+            tracking.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 text-center">
+        <div class="card-body">
+          <div class="stats-icon bg-danger mx-auto mb-3">
+            <i class="fas fa-clock"></i>
+          </div>
+          <h5 class="card-title">Staff Management</h5>
+          <p class="card-text">
+            Attendance tracking, scheduling, and performance management for all
+            staff.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 text-center">
+        <div class="card-body">
+          <div class="stats-icon bg-secondary mx-auto mb-3">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+          <h5 class="card-title">Analytics & Reports</h5>
+          <p class="card-text">
+            Comprehensive reporting and analytics for better decision making.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="bg-light py-5">
+  <div class="container">
+    <div class="row text-center">
+      <div class="col-md-3">
+        <div class="stats-card card p-4">
+          <h3 class="text-primary fw-bold">24/7</h3>
+          <p class="text-muted">Emergency Support</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stats-card card p-4">
+          <h3 class="text-success fw-bold">1000+</h3>
+          <p class="text-muted">Patients Served</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stats-card card p-4">
+          <h3 class="text-info fw-bold">50+</h3>
+          <p class="text-muted">Medical Staff</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stats-card card p-4">
+          <h3 class="text-warning fw-bold">99%</h3>
+          <p class="text-muted">Uptime</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hospital Information Section -->
+<div class="container py-5">
+  <div class="row">
+    <div class="col-lg-8 mx-auto">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-hospital-alt"></i> Hospital Information
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6 class="text-primary">About Our Hospital</h6>
+              <p class="text-muted">
+                MediCare Pro Hospital is a leading healthcare provider committed
+                to delivering exceptional medical care with compassion and
+                excellence. Our state-of-the-art facility combines advanced
+                technology with personalized care to ensure the best possible
+                outcomes for our patients.
+              </p>
+
+              <h6 class="text-primary mt-3">Our Mission</h6>
+              <p class="text-muted">
+                To provide comprehensive, accessible, and affordable healthcare
+                services to our community while maintaining the highest
+                standards of medical excellence and patient safety.
+              </p>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-primary">Facilities & Services</h6>
+              <ul class="list-unstyled">
+                <li>
+                  <i class="fas fa-check text-success"></i> 24/7 Emergency Care
+                </li>
+                <li>
+                  <i class="fas fa-check text-success"></i> Advanced Diagnostic
+                  Lab
+                </li>
+                <li>
+                  <i class="fas fa-check text-success"></i> Digital X-Ray &
+                  Imaging
+                </li>
+                <li>
+                  <i class="fas fa-check text-success"></i> Modern Operation
+                  Theaters
+                </li>
+                <li>
+                  <i class="fas fa-check text-success"></i> ICU & Critical Care
+                </li>
+                <li>
+                  <i class="fas fa-check text-success"></i> Pharmacy Services
+                </li>
+                <li>
+                  <i class="fas fa-check text-success"></i> Ambulance Services
+                </li>
+                <li>
+                  <i class="fas fa-check text-success"></i> Telemedicine
+                  Consultations
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="row mt-4">
+            <div class="col-md-4">
+              <div class="text-center">
+                <h5 class="text-primary">Working Hours</h5>
+                <p class="text-muted mb-1">
+                  <strong>OPD:</strong> 8:00 AM - 8:00 PM
+                </p>
+                <p class="text-muted mb-1"><strong>Emergency:</strong> 24/7</p>
+                <p class="text-muted">
+                  <strong>Laboratory:</strong> 7:00 AM - 10:00 PM
+                </p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-center">
+                <h5 class="text-primary">Specializations</h5>
+                <p class="text-muted mb-1">General Medicine</p>
+                <p class="text-muted mb-1">Cardiology</p>
+                <p class="text-muted mb-1">Orthopedics</p>
+                <p class="text-muted">Pediatrics</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-center">
+                <h5 class="text-primary">Insurance Partners</h5>
+                <p class="text-muted mb-1">We accept all major</p>
+                <p class="text-muted mb-1">insurance providers</p>
+                <p class="text-muted">Cashless facility available</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Section -->
+<div class="container py-5">
+  <div class="row">
+    <div class="col-lg-8 mx-auto text-center">
+      <h2 class="display-6 fw-bold text-primary mb-4">Get in Touch</h2>
+      <p class="lead mb-4">
+        Have questions about our services? Need to schedule an appointment?
+        Contact us today!
+      </p>
+
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card border-0">
+            <div class="card-body">
+              <i class="fas fa-phone fa-2x text-primary mb-3"></i>
+              <h5>Call Us</h5>
+              <p class="text-muted">+1 (555) 123-4567</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0">
+            <div class="card-body">
+              <i class="fas fa-envelope fa-2x text-primary mb-3"></i>
+              <h5>Email Us</h5>
+              <p class="text-muted">info@medicareprohospital.com</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0">
+            <div class="card-body">
+              <i class="fas fa-map-marker-alt fa-2x text-primary mb-3"></i>
+              <h5>Visit Us</h5>
+              <p class="text-muted">123 Healthcare Ave, Medical City</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Enquiry Modal -->
+<div class="modal fade" id="enquiryModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-envelope text-primary"></i> Make an Enquiry
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <form id="enquiryForm">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Full Name *</label>
+              <input type="text" class="form-control" name="name" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email *</label>
+              <input type="email" class="form-control" name="email" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone *</label>
+              <input type="tel" class="form-control" name="phone" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Enquiry Type *</label>
+              <select class="form-select" name="enquiry_type" required>
+                <option value="">Select Type</option>
+                <option value="general">General Information</option>
+                <option value="appointment">Appointment Booking</option>
+                <option value="emergency">Emergency</option>
+                <option value="telemedicine">Telemedicine</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Subject *</label>
+              <input type="text" class="form-control" name="subject" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Message *</label>
+              <textarea
+                class="form-control"
+                name="message"
+                rows="4"
+                required
+              ></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Security Verification *</label>
+              <div class="card bg-light">
+                <div class="card-body">
+                  <div class="row align-items-center">
+                    <div class="col-md-6">
+                      <img
+                        id="captchaImage"
+                        src=""
+                        alt="CAPTCHA"
+                        class="img-fluid border rounded"
+                        style="height: 80px"
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <div class="input-group">
+                        <input
+                          type="text"
+                          class="form-control"
+                          name="captcha"
+                          id="captchaInput"
+                          placeholder="Enter code"
+                          required
+                          maxlength="6"
+                        />
+                        <button
+                          class="btn btn-outline-secondary"
+                          type="button"
+                          onclick="refreshCaptcha()"
+                        >
+                          <i class="fas fa-sync-alt"></i>
+                        </button>
+                      </div>
+                      <small class="text-muted"
+                        >Enter the code shown in the image</small
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" name="captcha_id" id="captchaId" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" id="submitEnquiryBtn">
+            <i class="fas fa-paper-plane"></i> Submit Enquiry
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Load CAPTCHA when modal opens
+  document
+    .getElementById("enquiryModal")
+    .addEventListener("shown.bs.modal", function () {
+      loadCaptcha();
+    });
+
+  function loadCaptcha() {
+    fetch("/captcha/generate")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          document.getElementById("captchaImage").src = data.captcha_image;
+          document.getElementById("captchaId").value = data.captcha_id;
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading CAPTCHA:", error);
+      });
+  }
+
+  function refreshCaptcha() {
+    document.getElementById("captchaInput").value = "";
+    loadCaptcha();
+  }
+
+  document
+    .getElementById("enquiryForm")
+    .addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+      const submitBtn = this.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+
+      submitBtn.innerHTML =
+        '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+      submitBtn.disabled = true;
+
+      fetch("/enquiry/submit", {
+        method: "POST",
+        body: formData,
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            alert("Enquiry submitted successfully! We will contact you soon.");
+            this.reset();
+            bootstrap.Modal.getInstance(
+              document.getElementById("enquiryModal")
+            ).hide();
+          } else {
+            alert(
+              data.message || "Error submitting enquiry. Please try again."
+            );
+            // Refresh CAPTCHA on error
+            refreshCaptcha();
+          }
+        })
+        .catch((error) => {
+          alert("Error submitting enquiry. Please try again.");
+          refreshCaptcha();
+        })
+        .finally(() => {
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        });
+    });
+</script>
+{% endblock %}

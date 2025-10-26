@@ -1,0 +1,60 @@
+<div class="modal-header">
+    <h5 class="modal-title">
+        <i class="fas fa-calendar-alt text-success"></i> Appointment Details
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <div class="row">
+        <div class="col-md-6">
+            <h6>Patient Information</h6>
+            <p><strong>Name:</strong> {{ appointment.patient.first_name }} {{ appointment.patient.last_name }}</p>
+            <p><strong>Patient ID:</strong> {{ appointment.patient.patient_id }}</p>
+            <p><strong>Phone:</strong> {{ appointment.patient.phone }}</p>
+            <p><strong>Email:</strong> {{ appointment.patient.email or 'Not provided' }}</p>
+        </div>
+        <div class="col-md-6">
+            <h6>Appointment Details</h6>
+            <p><strong>Doctor:</strong> {{ appointment.doctor.full_name }}</p>
+            <p><strong>Date & Time:</strong> {{ appointment.appointment_date.strftime('%Y-%m-%d %I:%M %p') }}</p>
+            <p><strong>Type:</strong>
+                <span class="badge bg-{{ 'info' if appointment.appointment_type == 'telemedicine' else 'primary' }}">
+                    {{ appointment.appointment_type.title() }}
+                </span>
+            </p>
+            <p><strong>Status:</strong>
+                <span
+                    class="badge bg-{{ 'success' if appointment.status == 'completed' else 'warning' if appointment.status == 'scheduled' else 'danger' }}">
+                    {{ appointment.status.title() }}
+                </span>
+            </p>
+        </div>
+    </div>
+
+    {% if appointment.notes %}
+    <hr>
+    <h6>Notes</h6>
+    <p>{{ appointment.notes }}</p>
+    {% endif %}
+
+    {% if appointment.meeting_link and appointment.appointment_type == 'telemedicine' %}
+    <hr>
+    <h6>Telemedicine</h6>
+    <a href="{{ appointment.meeting_link }}" target="_blank" class="btn btn-info">
+        <i class="fas fa-video"></i> Join Meeting
+    </a>
+    {% endif %}
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    {% if appointment.status == 'scheduled' %}
+    <button type="button" class="btn btn-success" hx-post="/appointment/{{ appointment.id }}/complete"
+        hx-confirm="Mark this appointment as completed?">
+        <i class="fas fa-check"></i> Mark Complete
+    </button>
+    <button type="button" class="btn btn-danger" hx-post="/appointment/{{ appointment.id }}/cancel"
+        hx-confirm="Cancel this appointment?">
+        <i class="fas fa-times"></i> Cancel
+    </button>
+    {% endif %}
+</div>

@@ -1,0 +1,71 @@
+<div class="modal-header">
+    <h5 class="modal-title">
+        <i class="fas fa-bed text-warning"></i> Add New Ward
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<form hx-post="/admin/ward/add" hx-target="#wards-list">
+    <div class="modal-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Ward Name *</label>
+                    <input type="text" class="form-control" id="name" name="name" required
+                        placeholder="e.g., General Ward A">
+                </div>
+
+                <div class="mb-3">
+                    <label for="ward_type" class="form-label">Ward Type *</label>
+                    <select class="form-select" id="ward_type" name="ward_type" required>
+                        <option value="">Select Type</option>
+                        <option value="general">General</option>
+                        <option value="icu">ICU</option>
+                        <option value="emergency">Emergency</option>
+                        <option value="maternity">Maternity</option>
+                        <option value="pediatric">Pediatric</option>
+                        <option value="surgical">Surgical</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="total_beds" class="form-label">Number of Beds *</label>
+                    <input type="number" class="form-control" id="total_beds" name="total_beds" min="1" max="100"
+                        required>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="bed_type" class="form-label">Default Bed Type</label>
+                    <select class="form-select" id="bed_type" name="bed_type">
+                        <option value="general">General</option>
+                        <option value="private">Private</option>
+                        <option value="icu">ICU</option>
+                        <option value="isolation">Isolation</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="charge_per_day" class="form-label">Charge per Day ($) *</label>
+                    <input type="number" class="form-control" id="charge_per_day" name="charge_per_day" step="0.01"
+                        min="0" required>
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="auto_create_beds" checked>
+                        <label class="form-check-label" for="auto_create_beds">
+                            Auto-create beds with sequential numbers
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Add Ward
+        </button>
+    </div>
+</form>

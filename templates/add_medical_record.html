@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Add Medical Record{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Add Medical Record - {{ patient.first_name }} {{ patient.last_name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="chief_complaint" class="form-label">Chief Complaint *</label>
+                                    <textarea class="form-control" id="chief_complaint" name="chief_complaint" rows="3"
+                                        required></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="diagnosis" class="form-label">Diagnosis *</label>
+                                    <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3"
+                                        required></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="treatment_plan" class="form-label">Treatment Plan</label>
+                                    <textarea class="form-control" id="treatment_plan" name="treatment_plan"
+                                        rows="4"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="vital_signs" class="form-label">Vital Signs</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control mb-2" placeholder="Blood Pressure"
+                                                name="bp">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control mb-2" placeholder="Temperature"
+                                                name="temp">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control mb-2" placeholder="Pulse Rate"
+                                                name="pulse">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control mb-2" placeholder="Respiratory Rate"
+                                                name="resp">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control mb-2" placeholder="Weight (kg)"
+                                                name="weight">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control mb-2" placeholder="Height (cm)"
+                                                name="height">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label">Additional Notes</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="6"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Medical Record
+                                </button>
+                                <a href="{{ url_for('patient_ehr', patient_id=patient.id) }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Collect vital signs into JSON format before form submission
+    document.querySelector('form').addEventListener('submit', function (e) {
+        const vitalSigns = {
+            blood_pressure: document.querySelector('input[name="bp"]').value,
+            temperature: document.querySelector('input[name="temp"]').value,
+            pulse_rate: document.querySelector('input[name="pulse"]').value,
+            respiratory_rate: document.querySelector('input[name="resp"]').value,
+            weight: document.querySelector('input[name="weight"]').value,
+            height: document.querySelector('input[name="height"]').value
+        };
+
+        // Create hidden input for vital signs JSON
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'vital_signs';
+        hiddenInput.value = JSON.stringify(vitalSigns);
+        this.appendChild(hiddenInput);
+    });
+</script>
+{% endblock %}

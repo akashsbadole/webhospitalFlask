@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Appointments - {{ get_text('title') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2>
+                <i class="fas fa-calendar-alt text-success"></i>
+                {{ get_text('appointments') }}
+            </h2>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{{ url_for('add_appointment') }}" class="btn btn-success">
+                <i class="fas fa-calendar-plus"></i> Schedule Appointment
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" name="date" value="{{ date_filter }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="">All Status</option>
+                                <option value="scheduled" {{ 'selected' if status_filter=='scheduled' }}>Scheduled
+                                </option>
+                                <option value="completed" {{ 'selected' if status_filter=='completed' }}>Completed
+                                </option>
+                                <option value="cancelled" {{ 'selected' if status_filter=='cancelled' }}>Cancelled
+                                </option>
+                                <option value="no-show" {{ 'selected' if status_filter=='no-show' }}>No Show</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="d-grid d-md-flex gap-2 w-100">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                                <a href="{{ url_for('appointments') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointments Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Appointment List
+                        <span class="badge bg-success ms-2">{{ appointments.total }} total</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if appointments.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Patient</th>
+                                    <th>Doctor</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in appointments.items %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <strong>{{ appointment.appointment_date.strftime('%m/%d/%Y') }}</strong>
+                                            <br><small class="text-muted">{{
+                                                appointment.appointment_date.strftime('%I:%M %p') }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ appointment.patient.first_name }} {{
+                                                appointment.patient.last_name }}</strong>
+                                            <br><small class="text-muted">{{ appointment.patient.patient_id }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <i class="fas fa-user-md text-primary"></i>
+                                            {{ appointment.doctor.full_name }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge bg-{{ 'info' if appointment.appointment_type == 'telemedicine' else 'primary' }}">
+                                            {{ appointment.appointment_type.title() }}
+                                        </span>
+                                        {% if appointment.appointment_type == 'telemedicine' and
+                                        appointment.meeting_link %}
+                                        <br><a href="{{ appointment.meeting_link }}" target="_blank"
+                                            class="btn btn-sm btn-outline-info mt-1">
+                                            <i class="fas fa-video"></i> Join
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set status_colors = {
+                                        'scheduled': 'primary',
+                                        'completed': 'success',
+                                        'cancelled': 'danger',
+                                        'no-show': 'warning'
+                                        } %}
+                                        <span class="badge bg-{{ status_colors.get(appointment.status, 'secondary') }}">
+                                            {{ appointment.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if appointment.status == 'scheduled' %}
+                                            <button class="btn btn-outline-success"
+                                                hx-post="/appointment/{{ appointment.id }}/complete"
+                                                hx-confirm="Mark this appointment as completed?" hx-target="closest tr"
+                                                hx-swap="outerHTML">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger"
+                                                hx-post="/appointment/{{ appointment.id }}/cancel"
+                                                hx-confirm="Cancel this appointment?" hx-target="closest tr"
+                                                hx-swap="outerHTML">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            {% endif %}
+                                            <button class="btn btn-outline-primary"
+                                                hx-get="/appointment/{{ appointment.id }}/view"
+                                                hx-target="#modal-content" data-bs-toggle="modal"
+                                                data-bs-target="#dynamicModal">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if appointments.pages > 1 %}
+                    <div class="card-footer">
+                        <nav aria-label="Appointment pagination">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if appointments.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link"
+                                        href="{{ url_for('appointments', page=appointments.prev_num, date=date_filter, status=status_filter) }}">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% for page_num in appointments.iter_pages() %}
+                                {% if page_num %}
+                                {% if page_num != appointments.page %}
+                                <li class="page-item">
+                                    <a class="page-link"
+                                        href="{{ url_for('appointments', page=page_num, date=date_filter, status=status_filter) }}">{{
+                                        page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+
+                                {% if appointments.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link"
+                                        href="{{ url_for('appointments', page=appointments.next_num, date=date_filter, status=status_filter) }}">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-alt fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No appointments found</h4>
+                        {% if date_filter or status_filter %}
+                        <p class="text-muted">No appointments match your filter criteria.</p>
+                        <a href="{{ url_for('appointments') }}" class="btn btn-outline-primary">View All
+                            Appointments</a>
+                        {% else %}
+                        <p class="text-muted">Start by scheduling your first appointment.</p>
+                        <a href="{{ url_for('add_appointment') }}" class="btn btn-success">Schedule First
+                            Appointment</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dynamic Modal -->
+<div class="modal fade" id="dynamicModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Import Results{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Import Results</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h4 class="text-primary">{{ results.total_rows }}</h4>
+                                    <p>Total Rows Processed</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h4 class="text-success">{{ results.successful_imports }}</h4>
+                                    <p>Successful Imports</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h4 class="text-danger">{{ results.failed_imports }}</h4>
+                                    <p>Failed Imports</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if results.errors %}
+                    <div class="mt-4">
+                        <h5 class="text-danger">Errors:</h5>
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                {% for error in results.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if results.warnings %}
+                    <div class="mt-4">
+                        <h5 class="text-warning">Warnings:</h5>
+                        <div class="alert alert-warning">
+                            <ul class="mb-0">
+                                {% for warning in results.warnings %}
+                                <li>{{ warning }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        <a href="{{ url_for('data_import') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left"></i> Back to Import
+                        </a>
+                        {% if results.successful_imports > 0 %}
+                        <a href="{{ url_for('patients') }}" class="btn btn-success">
+                            <i class="fas fa-users"></i> View Patients
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

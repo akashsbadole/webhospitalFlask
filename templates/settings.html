@@ -1,0 +1,2202 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4">
+                <i class="fas fa-cogs me-2"></i>System Settings
+            </h1>
+        </div>
+    </div>
+
+    <!-- Settings Navigation -->
+    <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="organization-tab" data-bs-toggle="tab" data-bs-target="#organization" type="button" role="tab">
+                <i class="fas fa-hospital me-2"></i>Organization
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">
+                <i class="fas fa-shield-alt me-2"></i>Security
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="clinical-tab" data-bs-toggle="tab" data-bs-target="#clinical" type="button" role="tab">
+                <i class="fas fa-stethoscope me-2"></i>Clinical
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="communication-tab" data-bs-toggle="tab" data-bs-target="#communication" type="button" role="tab">
+                <i class="fas fa-envelope me-2"></i>Communication
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="billing-tab" data-bs-toggle="tab" data-bs-target="#billing" type="button" role="tab">
+                <i class="fas fa-credit-card me-2"></i>Billing
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="telemedicine-tab" data-bs-toggle="tab" data-bs-target="#telemedicine" type="button" role="tab">
+                <i class="fas fa-video me-2"></i>Telemedicine
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data" type="button" role="tab">
+                <i class="fas fa-database me-2"></i>Data & Privacy
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="ui-tab" data-bs-toggle="tab" data-bs-target="#ui" type="button" role="tab">
+                <i class="fas fa-palette me-2"></i>UI & Accessibility
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="settingsTabsContent">
+        <!-- Organization Settings Tab -->
+        <div class="tab-pane fade show active" id="organization" role="tabpanel">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="organization">
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-hospital me-2"></i>Hospital Information & Branding
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="hospital_name" class="form-label">Hospital Name</label>
+                                    <input type="text" class="form-control" id="hospital_name" name="hospital_name" 
+                                           value="{{ settings.get('hospital_name', 'MediCare Pro') }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="hospital_tagline" class="form-label">Tagline</label>
+                                    <input type="text" class="form-control" id="hospital_tagline" name="hospital_tagline" 
+                                           value="{{ settings.get('hospital_tagline', 'Your Health, Our Priority') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="logo" class="form-label">Hospital Logo</label>
+                                    <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                                    {% if settings.get('hospital_logo') %}
+                                        <div class="mt-2">
+                                            <img src="{{ url_for('static', filename=settings.hospital_logo.replace('static/', '')) }}" alt="Hospital Logo" style="max-height: 100px;">
+                                            <p class="text-muted small">Current logo</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-3">
+                                    <label for="favicon" class="form-label">Favicon</label>
+                                    <input type="file" class="form-control" id="favicon" name="favicon" accept="image/x-icon,image/png">
+                                    {% if settings.get('hospital_favicon') %}
+                                        <div class="mt-2">
+                                            <img src="{{ url_for('static', filename=settings.hospital_favicon.replace('static/', '')) }}" alt="Hospital Favicon" style="max-height: 32px;">
+                                            <p class="text-muted small">Current favicon</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="primary_color" class="form-label">Primary Color</label>
+                                    <input type="color" class="form-control form-control-color" id="primary_color" name="primary_color" 
+                                           value="{{ settings.get('primary_color', '#0d6efd') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="secondary_color" class="form-label">Secondary Color</label>
+                                    <input type="color" class="form-control form-control-color" id="secondary_color" name="secondary_color" 
+                                           value="{{ settings.get('secondary_color', '#6c757d') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="custom_domain" class="form-label">Custom Domain</label>
+                                    <input type="text" class="form-control" id="custom_domain" name="custom_domain" 
+                                           value="{{ settings.get('custom_domain', '') }}" placeholder="hospital.example.com">
+                                </div>
+                            </div>
+                        </div> -->
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-sign-in-alt me-2"></i>Custom Login Page
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="login_welcome_text" class="form-label">Welcome Text</label>
+                                    <input type="text" class="form-control" id="login_welcome_text" name="login_welcome_text" 
+                                           value="{{ settings.get('login_welcome_text', 'Welcome to MediCare Pro') }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="login_hero_image" class="form-label">Hero Image URL</label>
+                                    <input type="url" class="form-control" id="login_hero_image" name="login_hero_image" 
+                                           value="{{ settings.get('login_hero_image', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="login_help_links" class="form-label">Help Links</label>
+                                    <textarea class="form-control" id="login_help_links" name="login_help_links" rows="3">{{ settings.get('login_help_links', '') }}</textarea>
+                                    <small class="form-text text-muted">One link per line: Link Text|URL</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-envelope me-2"></i>Email & SMS Configuration
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email_from_address" class="form-label">From Email Address</label>
+                                    <input type="email" class="form-control" id="email_from_address" name="email_from_address" 
+                                           value="{{ settings.get('email_from_address', 'noreply@hospital.com') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="sms_sender_id" class="form-label">SMS Sender ID</label>
+                                    <input type="text" class="form-control" id="sms_sender_id" name="sms_sender_id" 
+                                           value="{{ settings.get('sms_sender_id', 'MEDICAR') }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-code-branch me-2"></i>Multi-Branch Management
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="branchesTable">
+                                <thead>
+                                    <tr>
+                                        <th>Branch Name</th>
+                                        <th>Code</th>
+                                        <th>Address</th>
+                                        <th>City</th>
+                                        <th>State</th>
+                                        <th>Phone</th>
+                                        <th>Email</th>
+                                        <th>Domain</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for branch in branches %}
+                                    <tr>
+                                        <td><input type="text" class="form-control" name="branch_name" value="{{ branch.name }}"></td>
+                                        <td><input type="text" class="form-control" name="branch_code" value="{{ branch.code }}"></td>
+                                        <td><input type="text" class="form-control" name="branch_address" value="{{ branch.address }}"></td>
+                                        <td><input type="text" class="form-control" name="branch_city" value="{{ branch.city }}"></td>
+                                        <td><input type="text" class="form-control" name="branch_state" value="{{ branch.state }}"></td>
+                                        <td><input type="text" class="form-control" name="branch_phone" value="{{ branch.phone }}"></td>
+                                        <td><input type="email" class="form-control" name="branch_email" value="{{ branch.email }}"></td>
+                                        <td><input type="text" class="form-control" name="branch_domain" value="{{ branch.domain }}"></td>
+                                        <td>
+                                            <input type="hidden" name="branch_id" value="{{ branch.id }}">
+                                            <button type="button" class="btn btn-sm btn-outline-danger remove-branch">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger ms-1"
+                                                    onclick="deleteBranch('{{ branch.id }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="addBranchBtn">
+                            <i class="fas fa-plus me-2"></i>Add Branch
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-language me-2"></i>Language Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="default_language" class="form-label">Default Language</label>
+                                    <select class="form-select" id="default_language" name="default_language">
+                                        {% for lang in languages %}
+                                        <option value="{{ lang.code }}" {% if settings.get('default_language') == lang.code %}selected{% endif %}>
+                                            {{ lang.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="enable_multilingual" name="enable_multilingual" 
+                                               {% if settings.get('enable_multilingual') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_multilingual">
+                                            Enable Multilingual UI
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-code me-2"></i>Custom CSS
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="custom_css" class="form-label">Custom CSS Code</label>
+                            <textarea class="form-control" id="custom_css" name="custom_css" rows="10">{{ settings.get('custom_css', '') }}</textarea>
+                            <small class="form-text text-muted">Add custom CSS to override default styles</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Organization Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Security Settings Tab -->
+        <div class="tab-pane fade" id="security" role="tabpanel">
+            <form method="POST">
+                <input type="hidden" name="action" value="security">
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-key me-2"></i>Password Policy
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="password_min_length" class="form-label">Minimum Password Length</label>
+                                    <input type="number" class="form-control" id="password_min_length" name="password_min_length" 
+                                           value="{{ settings.get('password_min_length', '8') }}" min="6" max="20">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password_expiry_days" class="form-label">Password Expiry (Days)</label>
+                                    <input type="number" class="form-control" id="password_expiry_days" name="password_expiry_days" 
+                                           value="{{ settings.get('password_expiry_days', '90') }}" min="0" max="365">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="password_require_uppercase" name="password_require_uppercase" 
+                                               {% if settings.get('password_require_uppercase') %}checked{% endif %}>
+                                        <label class="form-check-label" for="password_require_uppercase">
+                                            Require Uppercase Letters
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="password_require_lowercase" name="password_require_lowercase" 
+                                               {% if settings.get('password_require_lowercase') %}checked{% endif %}>
+                                        <label class="form-check-label" for="password_require_lowercase">
+                                            Require Lowercase Letters
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="password_require_numbers" name="password_require_numbers" 
+                                               {% if settings.get('password_require_numbers') %}checked{% endif %}>
+                                        <label class="form-check-label" for="password_require_numbers">
+                                            Require Numbers
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="password_require_special" name="password_require_special" 
+                                               {% if settings.get('password_require_special') %}checked{% endif %}>
+                                        <label class="form-check-label" for="password_require_special">
+                                            Require Special Characters
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-mobile-alt me-2"></i>Two-Factor Authentication
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_2fa" name="enable_2fa" 
+                                               {% if settings.get('enable_2fa') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_2fa">
+                                            Enable Two-Factor Authentication
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="require_2fa_admins" name="require_2fa_admins" 
+                                               {% if settings.get('require_2fa_admins') %}checked{% endif %}>
+                                        <label class="form-check-label" for="require_2fa_admins">
+                                            Require 2FA for Administrators
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="require_2fa_doctors" name="require_2fa_doctors" 
+                                               {% if settings.get('require_2fa_doctors') %}checked{% endif %}>
+                                        <label class="form-check-label" for="require_2fa_doctors">
+                                            Require 2FA for Doctors
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clock me-2"></i>Session Management
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="session_timeout_minutes" class="form-label">Session Timeout (Minutes)</label>
+                                    <input type="number" class="form-control" id="session_timeout_minutes" name="session_timeout_minutes" 
+                                           value="{{ settings.get('session_timeout_minutes', '30') }}" min="5" max="480">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="auto_logout_enabled" name="auto_logout_enabled" 
+                                               {% if settings.get('auto_logout_enabled') %}checked{% endif %}>
+                                        <label class="form-check-label" for="auto_logout_enabled">
+                                            Enable Auto Logout on Inactivity
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>Audit & Security
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="extended_audit_logging" name="extended_audit_logging" 
+                                               {% if settings.get('extended_audit_logging') %}checked{% endif %}>
+                                        <label class="form-check-label" for="extended_audit_logging">
+                                            Enable Extended Audit Logging
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="audit_log_retention_days" class="form-label">Audit Log Retention (Days)</label>
+                                    <input type="number" class="form-control" id="audit_log_retention_days" name="audit_log_retention_days" 
+                                           value="{{ settings.get('audit_log_retention_days', '365') }}" min="30" max="3650">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-network-wired me-2"></i>IP Restrictions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_ip_restrictions" name="enable_ip_restrictions" 
+                                               {% if settings.get('enable_ip_restrictions') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_ip_restrictions">
+                                            Enable IP Address Restrictions
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="allowed_ip_ranges" class="form-label">Allowed IP Ranges</label>
+                                    <textarea class="form-control" id="allowed_ip_ranges" name="allowed_ip_ranges" rows="3">{{ settings.get('allowed_ip_ranges', '') }}</textarea>
+                                    <small class="form-text text-muted">One IP range per line (e.g., 192.168.1.0/24)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="blocked_ip_ranges" class="form-label">Blocked IP Ranges</label>
+                                    <textarea class="form-control" id="blocked_ip_ranges" name="blocked_ip_ranges" rows="3">{{ settings.get('blocked_ip_ranges', '') }}</textarea>
+                                    <small class="form-text text-muted">One IP range per line (e.g., 10.0.0.0/8)</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Security Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Clinical Settings Tab -->
+        <div class="tab-pane fade" id="clinical" role="tabpanel">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="clinical">
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-id-card me-2"></i>Patient ID Format
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="patient_id_prefix" class="form-label">ID Prefix</label>
+                                    <input type="text" class="form-control" id="patient_id_prefix" name="patient_id_prefix" 
+                                           value="{{ settings.get('patient_id_prefix', 'P') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="patient_id_length" class="form-label">ID Number Length</label>
+                                    <input type="number" class="form-control" id="patient_id_length" name="patient_id_length" 
+                                           value="{{ settings.get('patient_id_length', '6') }}" min="4" max="10">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="patient_id_numbering" class="form-label">Numbering Style</label>
+                                    <select class="form-select" id="patient_id_numbering" name="patient_id_numbering">
+                                        <option value="sequential" {% if settings.get('patient_id_numbering') == 'sequential' %}selected{% endif %}>Sequential</option>
+                                        <option value="random" {% if settings.get('patient_id_numbering') == 'random' %}selected{% endif %}>Random</option>
+                                        <option value="yearly" {% if settings.get('patient_id_numbering') == 'yearly' %}selected{% endif %}>Year-based</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar-alt me-2"></i>Appointment Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="default_slot_length_minutes" class="form-label">Default Slot Length (Minutes)</label>
+                                    <input type="number" class="form-control" id="default_slot_length_minutes" name="default_slot_length_minutes" 
+                                           value="{{ settings.get('default_slot_length_minutes', '15') }}" min="5" max="120">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="appointment_buffer_minutes" class="form-label">Buffer Time (Minutes)</label>
+                                    <input type="number" class="form-control" id="appointment_buffer_minutes" name="appointment_buffer_minutes" 
+                                           value="{{ settings.get('appointment_buffer_minutes', '5') }}" min="0" max="30">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="enable_online_booking" name="enable_online_booking" 
+                                               {% if settings.get('enable_online_booking') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_online_booking">
+                                            Enable Online Booking
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-contract me-2"></i>Consent Forms
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="consent_form" class="form-label">Upload Consent Form (PDF)</label>
+                                    <input type="file" class="form-control" id="consent_form" name="consent_form" accept=".pdf">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="consent_form_name" class="form-label">Form Name</label>
+                                    <input type="text" class="form-control" id="consent_form_name" name="consent_form_name" 
+                                           placeholder="General Consent Form">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="consent_form_type" class="form-label">Form Type</label>
+                                    <select class="form-select" id="consent_form_type" name="consent_form_type">
+                                        <option value="treatment">Treatment Consent</option>
+                                        <option value="privacy">Privacy Consent</option>
+                                        <option value="telemedicine">Telemedicine Consent</option>
+                                        <option value="research">Research Consent</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="consent_form_required" name="consent_form_required" checked>
+                                        <label class="form-check-label" for="consent_form_required">
+                                            Required at Check-in
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if consent_forms %}
+                        <div class="mt-4">
+                            <h6>Existing Consent Forms</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Required</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for form in consent_forms %}
+                                        <tr>
+                                            <td>{{ form.name }}</td>
+                                            <td>{{ form.form_type.title() }}</td>
+                                            <td>{% if form.is_required %}Yes{% else %}No{% endif %}</td>
+                                            <td>
+                                                <a href="{{ url_for('static', filename=form.file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteConsentForm('{{ form.id }}')">Delete</button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-dollar-sign me-2"></i>Default Billing Items
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="default_consultation_fee" class="form-label">Default Consultation Fee</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ settings.get('currency_symbol', '$') }}</span>
+                                        <input type="number" class="form-control" id="default_consultation_fee" name="default_consultation_fee"
+                                               value="{{ settings.get('default_consultation_fee', '50') }}" min="0" step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="default_lab_panel_price" class="form-label">Default Lab Panel Price</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ settings.get('currency_symbol', '$') }}</span>
+                                        <input type="number" class="form-control" id="default_lab_panel_price" name="default_lab_panel_price"
+                                               value="{{ settings.get('default_lab_panel_price', '25') }}" min="0" step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="default_imaging_price" class="form-label">Default Imaging Price</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ settings.get('currency_symbol', '$') }}</span>
+                                        <input type="number" class="form-control" id="default_imaging_price" name="default_imaging_price"
+                                               value="{{ settings.get('default_imaging_price', '100') }}" min="0" step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="default_procedure_price" class="form-label">Default Minor Procedure Price</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ settings.get('currency_symbol', '$') }}</span>
+                                        <input type="number" class="form-control" id="default_procedure_price" name="default_procedure_price"
+                                               value="{{ settings.get('default_procedure_price', '150') }}" min="0" step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="default_emergency_fee" class="form-label">Default Emergency Fee</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ settings.get('currency_symbol', '$') }}</span>
+                                        <input type="number" class="form-control" id="default_emergency_fee" name="default_emergency_fee"
+                                               value="{{ settings.get('default_emergency_fee', '100') }}" min="0" step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="default_followup_fee" class="form-label">Default Follow-up Fee</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">{{ settings.get('currency_symbol', '$') }}</span>
+                                        <input type="number" class="form-control" id="default_followup_fee" name="default_followup_fee"
+                                               value="{{ settings.get('default_followup_fee', '30') }}" min="0" step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h6>Default Service Prices</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm" id="defaultServicesTable">
+                                <thead>
+                                    <tr>
+                                        <th>Service Name</th>
+                                        <th>Category</th>
+                                        <th>Price</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Default services will be populated here via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <button type="button" class="btn btn-secondary btn-sm mt-2" id="addDefaultServiceBtn">
+                            <i class="fas fa-plus me-1"></i>Add Default Service
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clock me-2"></i>Appointment Slot Templates
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <p class="text-muted mb-3">Create templates for different types of appointment slots with specific durations and buffer times.</p>
+                                
+                                {% if slot_templates %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Template Name</th>
+                                                <th>Duration (min)</th>
+                                                <th>Buffer Time (min)</th>
+                                                <th>Description</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for template in slot_templates %}
+                                            <tr>
+                                                <td>{{ template.name }}</td>
+                                                <td>{{ template.duration }}</td>
+                                                <td>{{ template.buffer_time }}</td>
+                                                <td>{{ template.description or '-' }}</td>
+                                                <td>
+                                                    {% if template.is_active %}
+                                                        <span class="badge bg-success">Active</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Inactive</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary edit-slot-template"
+                                                            data-id="{{ template.id }}"
+                                                            data-name="{{ template.name }}"
+                                                            data-duration="{{ template.duration }}"
+                                                            data-buffer="{{ template.buffer_time }}"
+                                                            data-description="{{ template.description or '' }}"
+                                                            data-active="{{ template.is_active }}">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger delete-slot-template"
+                                                            data-id="{{ template.id }}" data-name="{{ template.name }}">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>No slot templates configured. Add your first template below.
+                                </div>
+                                {% endif %}
+                                
+                                <hr>
+                                
+                                <h6 id="slotTemplateFormTitle">{% if editing_template %}Edit Template{% else %}Add New Template{% endif %}</h6>
+                                <form id="slotTemplateForm">
+                                    <input type="hidden" id="template_id" name="template_id" value="">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="mb-3">
+                                                <label for="template_name" class="form-label">Template Name</label>
+                                                <input type="text" class="form-control" id="template_name" name="template_name"
+                                                       placeholder="e.g., General Consultation" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="mb-3">
+                                                <label for="template_duration" class="form-label">Duration (min)</label>
+                                                <input type="number" class="form-control" id="template_duration" name="template_duration"
+                                                       min="5" max="180" value="15" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="mb-3">
+                                                <label for="template_buffer" class="form-label">Buffer Time (min)</label>
+                                                <input type="number" class="form-control" id="template_buffer" name="template_buffer"
+                                                       min="0" max="30" value="5">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-3">
+                                                <label for="template_description" class="form-label">Description</label>
+                                                <input type="text" class="form-control" id="template_description" name="template_description"
+                                                       placeholder="Optional description">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="mb-3">
+                                                <div class="form-check mt-4">
+                                                    <input class="form-check-input" type="checkbox" id="template_active" name="template_active" checked>
+                                                    <label class="form-check-label" for="template_active">
+                                                        Active
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                <i class="fas fa-save me-1"></i>Save Template
+                                            </button>
+                                            <button type="button" class="btn btn-secondary btn-sm ms-2" id="cancelSlotTemplate">
+                                                <i class="fas fa-times me-1"></i>Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Clinical Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Communication Settings Tab -->
+        <div class="tab-pane fade" id="communication" role="tabpanel">
+            <form method="POST">
+                <input type="hidden" name="action" value="communication">
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-sms me-2"></i>SMS Gateway Configuration
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="sms_gateway_provider" class="form-label">SMS Gateway Provider</label>
+                                    <select class="form-select" id="sms_gateway_provider" name="sms_gateway_provider">
+                                        <option value="twilio" {% if settings.get('sms_gateway_provider') == 'twilio' %}selected{% endif %}>Twilio</option>
+                                        <option value="nexmo" {% if settings.get('sms_gateway_provider') == 'nexmo' %}selected{% endif %}>Nexmo</option>
+                                        <option value="msg91" {% if settings.get('sms_gateway_provider') == 'msg91' %}selected{% endif %}>MSG91</option>
+                                        <option value="local" {% if settings.get('sms_gateway_provider') == 'local' %}selected{% endif %}>Local Gateway</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="sms_gateway_api_key" class="form-label">API Key</label>
+                                    <input type="password" class="form-control" id="sms_gateway_api_key" name="sms_gateway_api_key" 
+                                           value="{{ settings.get('sms_gateway_api_key', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="sms_gateway_api_secret" class="form-label">API Secret</label>
+                                    <input type="password" class="form-control" id="sms_gateway_api_secret" name="sms_gateway_api_secret" 
+                                           value="{{ settings.get('sms_gateway_api_secret', '') }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="sms_gateway_sender_number" class="form-label">Sender Number/ID</label>
+                                    <input type="text" class="form-control" id="sms_gateway_sender_number" name="sms_gateway_sender_number" 
+                                           value="{{ settings.get('sms_gateway_sender_number', '') }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-envelope me-2"></i>Email Gateway Configuration
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email_gateway_provider" class="form-label">Email Gateway Provider</label>
+                                    <select class="form-select" id="email_gateway_provider" name="email_gateway_provider">
+                                        <option value="smtp" {% if settings.get('email_gateway_provider') == 'smtp' %}selected{% endif %}>SMTP</option>
+                                        <option value="sendgrid" {% if settings.get('email_gateway_provider') == 'sendgrid' %}selected{% endif %}>SendGrid</option>
+                                        <option value="ses" {% if settings.get('email_gateway_provider') == 'ses' %}selected{% endif %}>Amazon SES</option>
+                                        <option value="mailgun" {% if settings.get('email_gateway_provider') == 'mailgun' %}selected{% endif %}>Mailgun</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email_smtp_server" class="form-label">SMTP Server</label>
+                                    <input type="text" class="form-control" id="email_smtp_server" name="email_smtp_server" 
+                                           value="{{ settings.get('email_smtp_server', 'smtp.gmail.com') }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email_smtp_port" class="form-label">SMTP Port</label>
+                                    <input type="number" class="form-control" id="email_smtp_port" name="email_smtp_port" 
+                                           value="{{ settings.get('email_smtp_port', '587') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email_smtp_username" class="form-label">SMTP Username</label>
+                                    <input type="text" class="form-control" id="email_smtp_username" name="email_smtp_username" 
+                                           value="{{ settings.get('email_smtp_username', '') }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email_smtp_password" class="form-label">SMTP Password</label>
+                                    <input type="password" class="form-control" id="email_smtp_password" name="email_smtp_password" 
+                                           value="{{ settings.get('email_smtp_password', '') }}">
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="email_use_tls" name="email_use_tls" 
+                                               {% if settings.get('email_use_tls') %}checked{% endif %}>
+                                        <label class="form-check-label" for="email_use_tls">
+                                            Use TLS/SSL
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bell me-2"></i>Notification Preferences
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Event</th>
+                                        <th>Email</th>
+                                        <th>SMS</th>
+                                        <th>WhatsApp</th>
+                                        <th>Push</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Appointment Reminder</td>
+                                        <td><input type="checkbox" name="notify_appointment_reminder_email" {% if settings.get('notify_appointment_reminder_email') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_appointment_reminder_sms" {% if settings.get('notify_appointment_reminder_sms') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_appointment_reminder_whatsapp" {% if settings.get('notify_appointment_reminder_whatsapp') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_appointment_reminder_push" {% if settings.get('notify_appointment_reminder_push') %}checked{% endif %}></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Appointment Cancelled</td>
+                                        <td><input type="checkbox" name="notify_appointment_cancelled_email" {% if settings.get('notify_appointment_cancelled_email') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_appointment_cancelled_sms" {% if settings.get('notify_appointment_cancelled_sms') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_appointment_cancelled_whatsapp" {% if settings.get('notify_appointment_cancelled_whatsapp') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_appointment_cancelled_push" {% if settings.get('notify_appointment_cancelled_push') %}checked{% endif %}></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Lab Result Ready</td>
+                                        <td><input type="checkbox" name="notify_lab_result_ready_email" {% if settings.get('notify_lab_result_ready_email') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_lab_result_ready_sms" {% if settings.get('notify_lab_result_ready_sms') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_lab_result_ready_whatsapp" {% if settings.get('notify_lab_result_ready_whatsapp') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_lab_result_ready_push" {% if settings.get('notify_lab_result_ready_push') %}checked{% endif %}></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Payment Reminder</td>
+                                        <td><input type="checkbox" name="notify_payment_reminder_email" {% if settings.get('notify_payment_reminder_email') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_payment_reminder_sms" {% if settings.get('notify_payment_reminder_sms') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_payment_reminder_whatsapp" {% if settings.get('notify_payment_reminder_whatsapp') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_payment_reminder_push" {% if settings.get('notify_payment_reminder_push') %}checked{% endif %}></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Medicine Refill</td>
+                                        <td><input type="checkbox" name="notify_medicine_refill_email" {% if settings.get('notify_medicine_refill_email') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_medicine_refill_sms" {% if settings.get('notify_medicine_refill_sms') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_medicine_refill_whatsapp" {% if settings.get('notify_medicine_refill_whatsapp') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_medicine_refill_push" {% if settings.get('notify_medicine_refill_push') %}checked{% endif %}></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Follow-up Reminder</td>
+                                        <td><input type="checkbox" name="notify_follow_up_reminder_email" {% if settings.get('notify_follow_up_reminder_email') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_follow_up_reminder_sms" {% if settings.get('notify_follow_up_reminder_sms') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_follow_up_reminder_whatsapp" {% if settings.get('notify_follow_up_reminder_whatsapp') %}checked{% endif %}></td>
+                                        <td><input type="checkbox" name="notify_follow_up_reminder_push" {% if settings.get('notify_follow_up_reminder_push') %}checked{% endif %}></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fab fa-whatsapp me-2"></i>WhatsApp Integration
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_whatsapp" name="enable_whatsapp" 
+                                               {% if settings.get('enable_whatsapp') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_whatsapp">
+                                            Enable WhatsApp Integration
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="whatsapp_api_key" class="form-label">WhatsApp API Key</label>
+                                    <input type="password" class="form-control" id="whatsapp_api_key" name="whatsapp_api_key" 
+                                           value="{{ settings.get('whatsapp_api_key', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="whatsapp_webhook_url" class="form-label">Webhook URL</label>
+                                    <input type="url" class="form-control" id="whatsapp_webhook_url" name="whatsapp_webhook_url" 
+                                           value="{{ settings.get('whatsapp_webhook_url', '') }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Communication Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Billing Settings Tab -->
+        <div class="tab-pane fade" id="billing" role="tabpanel">
+            <form method="POST">
+                <input type="hidden" name="action" value="billing">
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-money-bill-wave me-2"></i>Currency Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="currency" class="form-label">Default Currency</label>
+                                    <select class="form-select" id="currency" name="currency">
+                                        {% for currency in currencies %}
+                                        <option value="{{ currency.code }}" {% if settings.get('currency') == currency.code or selected_currency == currency.code %}selected{% endif %}>
+                                            {{ currency.name }} ({{ currency.symbol }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="currency_symbol" class="form-label">Currency Symbol</label>
+                                    <input type="text" class="form-control" id="currency_symbol" name="currency_symbol" 
+                                           value="{{ settings.get('currency_symbol', '$') }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-percentage me-2"></i>Tax Rules
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="tax_type" class="form-label">Tax Type</label>
+                                    <select class="form-select" id="tax_type" name="tax_type">
+                                        <option value="gst" {% if settings.get('tax_type') == 'gst' %}selected{% endif %}>GST</option>
+                                        <option value="vat" {% if settings.get('tax_type') == 'vat' %}selected{% endif %}>VAT</option>
+                                        <option value="sales_tax" {% if settings.get('tax_type') == 'sales_tax' %}selected{% endif %}>Sales Tax</option>
+                                        <option value="none" {% if settings.get('tax_type') == 'none' %}selected{% endif %}>No Tax</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="tax_percentage" class="form-label">Tax Percentage</label>
+                                    <input type="number" class="form-control" id="tax_percentage" name="tax_percentage" 
+                                           value="{{ settings.get('tax_percentage', '0') }}" min="0" max="50" step="0.1">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="tax_inclusive_pricing" name="tax_inclusive_pricing" 
+                                               {% if settings.get('tax_inclusive_pricing') %}checked{% endif %}>
+                                        <label class="form-check-label" for="tax_inclusive_pricing">
+                                            Tax Inclusive Pricing
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-credit-card me-2"></i>Payment Gateways
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- PayPal Settings -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6>PayPal</h6>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="paypal_enabled" name="paypal_enabled" 
+                                               {% if settings.get('paypal_enabled') %}checked{% endif %}>
+                                        <label class="form-check-label" for="paypal_enabled">
+                                            Enable PayPal
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="paypal_test_mode" name="paypal_test_mode" 
+                                               {% if settings.get('paypal_test_mode') %}checked{% endif %}>
+                                        <label class="form-check-label" for="paypal_test_mode">
+                                            Test Mode
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="paypal_api_key" class="form-label">API Key</label>
+                                    <input type="password" class="form-control" id="paypal_api_key" name="paypal_api_key" 
+                                           value="{{ settings.get('paypal_api_key', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="paypal_api_secret" class="form-label">API Secret</label>
+                                    <input type="password" class="form-control" id="paypal_api_secret" name="paypal_api_secret" 
+                                           value="{{ settings.get('paypal_api_secret', '') }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Razorpay Settings -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6>Razorpay</h6>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="razorpay_enabled" name="razorpay_enabled" 
+                                               {% if settings.get('razorpay_enabled') %}checked{% endif %}>
+                                        <label class="form-check-label" for="razorpay_enabled">
+                                            Enable Razorpay
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="razorpay_test_mode" name="razorpay_test_mode" 
+                                               {% if settings.get('razorpay_test_mode') %}checked{% endif %}>
+                                        <label class="form-check-label" for="razorpay_test_mode">
+                                            Test Mode
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="razorpay_api_key" class="form-label">API Key</label>
+                                    <input type="password" class="form-control" id="razorpay_api_key" name="razorpay_api_key" 
+                                           value="{{ settings.get('razorpay_api_key', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="razorpay_api_secret" class="form-label">API Secret</label>
+                                    <input type="password" class="form-control" id="razorpay_api_secret" name="razorpay_api_secret" 
+                                           value="{{ settings.get('razorpay_api_secret', '') }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Paytm Settings -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6>Paytm</h6>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="paytm_enabled" name="paytm_enabled" 
+                                               {% if settings.get('paytm_enabled') %}checked{% endif %}>
+                                        <label class="form-check-label" for="paytm_enabled">
+                                            Enable Paytm
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="paytm_test_mode" name="paytm_test_mode" 
+                                               {% if settings.get('paytm_test_mode') %}checked{% endif %}>
+                                        <label class="form-check-label" for="paytm_test_mode">
+                                            Test Mode
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="paytm_merchant_id" class="form-label">Merchant ID</label>
+                                    <input type="text" class="form-control" id="paytm_merchant_id" name="paytm_merchant_id" 
+                                           value="{{ settings.get('paytm_merchant_id', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="paytm_api_key" class="form-label">API Key</label>
+                                    <input type="password" class="form-control" id="paytm_api_key" name="paytm_api_key" 
+                                           value="{{ settings.get('paytm_api_key', '') }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stripe Settings -->
+                        <div class="row">
+                            <div class="col-12">
+                                <h6>Stripe</h6>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="stripe_enabled" name="stripe_enabled" 
+                                               {% if settings.get('stripe_enabled') %}checked{% endif %}>
+                                        <label class="form-check-label" for="stripe_enabled">
+                                            Enable Stripe
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="stripe_test_mode" name="stripe_test_mode" 
+                                               {% if settings.get('stripe_test_mode') %}checked{% endif %}>
+                                        <label class="form-check-label" for="stripe_test_mode">
+                                            Test Mode
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="stripe_api_key" class="form-label">Publishable Key</label>
+                                    <input type="password" class="form-control" id="stripe_api_key" name="stripe_api_key" 
+                                           value="{{ settings.get('stripe_api_key', '') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="stripe_api_secret" class="form-label">Secret Key</label>
+                                    <input type="password" class="form-control" id="stripe_api_secret" name="stripe_api_secret" 
+                                           value="{{ settings.get('stripe_api_secret', '') }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>Insurance Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_insurance_billing" name="enable_insurance_billing" 
+                                               {% if settings.get('enable_insurance_billing') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_insurance_billing">
+                                            Enable Insurance Billing
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="auto_generate_claims" name="auto_generate_claims" 
+                                               {% if settings.get('auto_generate_claims') %}checked{% endif %}>
+                                        <label class="form-check-label" for="auto_generate_claims">
+                                            Auto-generate Insurance Claims
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tags me-2"></i>Discount Policies
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h6>Early Payment Discount</h6>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_early_payment_discount" name="enable_early_payment_discount" 
+                                               {% if settings.get('enable_early_payment_discount') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_early_payment_discount">
+                                            Enable Early Payment Discount
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="early_payment_discount_percentage" class="form-label">Discount (%)</label>
+                                    <input type="number" class="form-control" id="early_payment_discount_percentage" name="early_payment_discount_percentage" 
+                                           value="{{ settings.get('early_payment_discount_percentage', '5') }}" min="0" max="50" step="0.1">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="early_payment_discount_days" class="form-label">Valid For (Days)</label>
+                                    <input type="number" class="form-control" id="early_payment_discount_days" name="early_payment_discount_days" 
+                                           value="{{ settings.get('early_payment_discount_days', '7') }}" min="1" max="30">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <h6>Staff Discount</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_staff_discount" name="enable_staff_discount" 
+                                               {% if settings.get('enable_staff_discount') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_staff_discount">
+                                            Enable Staff Discount
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="staff_discount_percentage" class="form-label">Discount (%)</label>
+                                    <input type="number" class="form-control" id="staff_discount_percentage" name="staff_discount_percentage" 
+                                           value="{{ settings.get('staff_discount_percentage', '10') }}" min="0" max="100" step="0.1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Billing Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Telemedicine Settings Tab -->
+        <div class="tab-pane fade" id="telemedicine" role="tabpanel">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="telemedicine">
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-video me-2"></i>Video Provider Configuration
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="video_provider" class="form-label">Video Provider</label>
+                                    <select class="form-select" id="video_provider" name="video_provider">
+                                        <option value="webrtc" {% if settings.get('video_provider') == 'webrtc' %}selected{% endif %}>WebRTC</option>
+                                        <option value="jitsi" {% if settings.get('video_provider') == 'jitsi' %}selected{% endif %}>Jitsi</option>
+                                        <option value="zoom" {% if settings.get('video_provider') == 'zoom' %}selected{% endif %}>Zoom</option>
+                                        <option value="twilio_video" {% if settings.get('video_provider') == 'twilio_video' %}selected{% endif %}>Twilio Video</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="webrtc_stun_server" class="form-label">STUN Server</label>
+                                    <input type="text" class="form-control" id="webrtc_stun_server" name="webrtc_stun_server" 
+                                           value="{{ settings.get('webrtc_stun_server', 'stun:stun.l.google.com:19302') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="webrtc_turn_server" class="form-label">TURN Server</label>
+                                    <input type="text" class="form-control" id="webrtc_turn_server" name="webrtc_turn_server" 
+                                           value="{{ settings.get('webrtc_turn_server', '') }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="webrtc_turn_username" class="form-label">TURN Username</label>
+                                    <input type="text" class="form-control" id="webrtc_turn_username" name="webrtc_turn_username" 
+                                           value="{{ settings.get('webrtc_turn_username', '') }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="webrtc_turn_password" class="form-label">TURN Password</label>
+                                    <input type="password" class="form-control" id="webrtc_turn_password" name="webrtc_turn_password" 
+                                           value="{{ settings.get('webrtc_turn_password', '') }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-record-vinyl me-2"></i>Recording Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_telemedicine_recording" name="enable_telemedicine_recording" 
+                                               {% if settings.get('enable_telemedicine_recording') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_telemedicine_recording">
+                                            Enable Telemedicine Recording
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="recording_retention_days" class="form-label">Recording Retention (Days)</label>
+                                    <input type="number" class="form-control" id="recording_retention_days" name="recording_retention_days" 
+                                           value="{{ settings.get('recording_retention_days', '30') }}" min="7" max="365">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-medical me-2"></i>E-Prescription Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_eprescription" name="enable_eprescription" 
+                                               {% if settings.get('enable_eprescription') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_eprescription">
+                                            Enable E-Prescription
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="doctor_signature" class="form-label">Doctor's Digital Signature</label>
+                                    <input type="file" class="form-control" id="doctor_signature" name="doctor_signature" accept="image/*">
+                                    {% if settings.get('doctor_signature_path') %}
+                                        <div class="mt-2">
+                                            <small>Current: <a href="{{ url_for('static', filename=settings.doctor_signature_path) }}" target="_blank">View Signature</a></small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-check me-2"></i>Telehealth Consent
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="require_telehealth_consent" name="require_telehealth_consent" 
+                                               {% if settings.get('require_telehealth_consent') %}checked{% endif %}>
+                                        <label class="form-check-label" for="require_telehealth_consent">
+                                            Require Telehealth Consent
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="telehealth_consent_text" class="form-label">Consent Text</label>
+                                    <textarea class="form-control" id="telehealth_consent_text" name="telehealth_consent_text" rows="5">{{ settings.get('telehealth_consent_text', '') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Telemedicine Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Data & Privacy Settings Tab -->
+        <div class="tab-pane fade" id="data" role="tabpanel">
+            <form method="POST">
+                <input type="hidden" name="action" value="data">
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-database me-2"></i>Backup Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="backup_schedule" class="form-label">Backup Schedule</label>
+                                    <select class="form-select" id="backup_schedule" name="backup_schedule">
+                                        <option value="daily" {% if settings.get('backup_schedule') == 'daily' %}selected{% endif %}>Daily</option>
+                                        <option value="weekly" {% if settings.get('backup_schedule') == 'weekly' %}selected{% endif %}>Weekly</option>
+                                        <option value="monthly" {% if settings.get('backup_schedule') == 'monthly' %}selected{% endif %}>Monthly</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="backup_time" class="form-label">Backup Time</label>
+                                    <input type="time" class="form-control" id="backup_time" name="backup_time" 
+                                           value="{{ settings.get('backup_time', '02:00') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="backup_retention_days" class="form-label">Retention (Days)</label>
+                                    <input type="number" class="form-control" id="backup_retention_days" name="backup_retention_days" 
+                                           value="{{ settings.get('backup_retention_days', '30') }}" min="7" max="365">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="enable_auto_backup" name="enable_auto_backup" 
+                                               {% if settings.get('enable_auto_backup') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_auto_backup">
+                                            Enable Auto Backup
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clock me-2"></i>Data Retention
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="patient_data_retention_years" class="form-label">Patient Data Retention (Years)</label>
+                                    <input type="number" class="form-control" id="patient_data_retention_years" name="patient_data_retention_years" 
+                                           value="{{ settings.get('patient_data_retention_years', '7') }}" min="1" max="25">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="inactive_patient_retention_years" class="form-label">Inactive Patient Retention (Years)</label>
+                                    <input type="number" class="form-control" id="inactive_patient_retention_years" name="inactive_patient_retention_years" 
+                                           value="{{ settings.get('inactive_patient_retention_years', '2') }}" min="1" max="10">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-secret me-2"></i>Data Anonymization
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_data_anonymization" name="enable_data_anonymization" 
+                                               {% if settings.get('enable_data_anonymization') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_data_anonymization">
+                                            Enable Data Anonymization
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="anonymization_after_years" class="form-label">Anonymize After (Years)</label>
+                                    <input type="number" class="form-control" id="anonymization_after_years" name="anonymization_after_years" 
+                                           value="{{ settings.get('anonymization_after_years', '10') }}" min="5" max="25">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-export me-2"></i>Export/Import Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_data_export" name="enable_data_export" 
+                                               {% if settings.get('enable_data_export') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_data_export">
+                                            Enable Data Export
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enable_data_import" name="enable_data_import" 
+                                               {% if settings.get('enable_data_import') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_data_import">
+                                            Enable Data Import
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="require_export_approval" name="require_export_approval" 
+                                               {% if settings.get('require_export_approval') %}checked{% endif %}>
+                                        <label class="form-check-label" for="require_export_approval">
+                                            Require Export Approval
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Data & Privacy Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- UI & Accessibility Settings Tab -->
+        <div class="tab-pane fade" id="ui" role="tabpanel">
+            <form method="POST">
+                <input type="hidden" name="action" value="ui">
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-palette me-2"></i>Theme Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="default_theme" class="form-label">Default Theme</label>
+                                    <select class="form-select" id="default_theme" name="default_theme">
+                                        <option value="light" {% if settings.get('default_theme') == 'light' %}selected{% endif %}>Light</option>
+                                        <option value="dark" {% if settings.get('default_theme') == 'dark' %}selected{% endif %}>Dark</option>
+                                        <option value="auto" {% if settings.get('default_theme') == 'auto' %}selected{% endif %}>Auto (System)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="enable_theme_switcher" name="enable_theme_switcher" 
+                                               {% if settings.get('enable_theme_switcher') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_theme_switcher">
+                                            Enable Theme Switcher
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-text-height me-2"></i>Font Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="default_font_size" class="form-label">Default Font Size</label>
+                                    <select class="form-select" id="default_font_size" name="default_font_size">
+                                        <option value="small" {% if settings.get('default_font_size') == 'small' %}selected{% endif %}>Small</option>
+                                        <option value="medium" {% if settings.get('default_font_size') == 'medium' %}selected{% endif %}>Medium</option>
+                                        <option value="large" {% if settings.get('default_font_size') == 'large' %}selected{% endif %}>Large</option>
+                                        <option value="extra_large" {% if settings.get('default_font_size') == 'extra_large' %}selected{% endif %}>Extra Large</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="enable_font_scaling" name="enable_font_scaling" 
+                                               {% if settings.get('enable_font_scaling') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_font_scaling">
+                                            Enable Font Scaling
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="enable_high_contrast" name="enable_high_contrast" 
+                                               {% if settings.get('enable_high_contrast') %}checked{% endif %}>
+                                        <label class="form-check-label" for="enable_high_contrast">
+                                            Enable High Contrast Mode
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-desktop me-2"></i>UI Preferences
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="sidebar_collapsed" name="sidebar_collapsed" 
+                                               {% if settings.get('sidebar_collapsed') %}checked{% endif %}>
+                                        <label class="form-check-label" for="sidebar_collapsed">
+                                            Collapsed Sidebar
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="compact_mode" name="compact_mode" 
+                                               {% if settings.get('compact_mode') %}checked{% endif %}>
+                                        <label class="form-check-label" for="compact_mode">
+                                            Compact Mode
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="show_tooltips" name="show_tooltips" 
+                                               {% if settings.get('show_tooltips') %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_tooltips">
+                                            Show Tooltips
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save UI & Accessibility Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add branch row functionality
+document.getElementById('addBranchBtn')?.addEventListener('click', function() {
+    const tbody = document.querySelector('#branchesTable tbody');
+    const newRow = document.createElement('tr');
+    
+    const timestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0];
+    
+    newRow.innerHTML = `
+        <td><input type="text" class="form-control" name="branch_name" placeholder="Branch Name"></td>
+        <td><input type="text" class="form-control" name="branch_code" placeholder="BR${timestamp}"></td>
+        <td><input type="text" class="form-control" name="branch_address" placeholder="Address"></td>
+        <td><input type="text" class="form-control" name="branch_city" placeholder="City"></td>
+        <td><input type="text" class="form-control" name="branch_state" placeholder="State"></td>
+        <td><input type="text" class="form-control" name="branch_phone" placeholder="Phone"></td>
+        <td><input type="email" class="form-control" name="branch_email" placeholder="Email"></td>
+        <td><input type="text" class="form-control" name="branch_domain" placeholder="Domain"></td>
+        <td>
+            <input type="hidden" name="branch_id" value="">
+            <button type="button" class="btn btn-sm btn-danger remove-branch">Remove</button>
+        </td>
+    `;
+    
+    tbody.appendChild(newRow);
+});
+
+// Remove branch row functionality
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-branch')) {
+        e.target.closest('tr').remove();
+    }
+});
+
+// Delete consent form function
+function deleteConsentForm(formId) {
+    if (confirm('Are you sure you want to delete this consent form?')) {
+        // In a real implementation, this would make an AJAX call to delete the form
+        // For now, we'll just reload the page
+        window.location.href = `/settings/delete_consent_form/${formId}`;
+    }
+}
+
+// Delete branch function
+function deleteBranch(branchId) {
+    if (confirm('Are you sure you want to delete this branch? This action cannot be undone.')) {
+        fetch(`/settings/delete_branch/${branchId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting branch. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting branch. Please try again.');
+        });
+    }
+}
+
+// Appointment Slot Templates functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const slotTemplateForm = document.getElementById('slotTemplateForm');
+    const editButtons = document.querySelectorAll('.edit-slot-template');
+    const deleteButtons = document.querySelectorAll('.delete-slot-template');
+    const cancelButton = document.getElementById('cancelSlotTemplate');
+    const formTitle = document.getElementById('slotTemplateFormTitle');
+    
+    // Edit slot template
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const templateId = this.getAttribute('data-id');
+            const name = this.getAttribute('data-name');
+            const duration = this.getAttribute('data-duration');
+            const buffer = this.getAttribute('data-buffer');
+            const description = this.getAttribute('data-description');
+            const active = this.getAttribute('data-active') === 'True';
+            
+            document.getElementById('template_id').value = templateId;
+            document.getElementById('template_name').value = name;
+            document.getElementById('template_duration').value = duration;
+            document.getElementById('template_buffer').value = buffer;
+            document.getElementById('template_description').value = description;
+            document.getElementById('template_active').checked = active;
+            
+            formTitle.textContent = 'Edit Template';
+            
+            // Scroll to form
+            slotTemplateForm.scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+    
+    // Delete slot template
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const templateId = this.getAttribute('data-id');
+            const templateName = this.getAttribute('data-name');
+            
+            if (confirm(`Are you sure you want to delete the template "${templateName}"?`)) {
+                fetch(`/settings/delete_slot_template/${templateId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting template. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting template. Please try again.');
+                });
+            }
+        });
+    });
+    
+    // Cancel edit
+    cancelButton.addEventListener('click', function() {
+        resetSlotTemplateForm();
+    });
+    
+    // Form submission
+    slotTemplateForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const templateId = document.getElementById('template_id').value;
+        const isEdit = templateId !== '';
+        
+        const formData = {
+            id: templateId,
+            name: document.getElementById('template_name').value,
+            duration: document.getElementById('template_duration').value,
+            buffer_time: document.getElementById('template_buffer').value,
+            description: document.getElementById('template_description').value,
+            is_active: document.getElementById('template_active').checked
+        };
+        
+        const url = isEdit ? '/settings/update_slot_template' : '/settings/add_slot_template';
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Error saving template. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving template. Please try again.');
+        });
+    });
+    
+    function resetSlotTemplateForm() {
+        document.getElementById('template_id').value = '';
+        document.getElementById('template_name').value = '';
+        document.getElementById('template_duration').value = '15';
+        document.getElementById('template_buffer').value = '5';
+        document.getElementById('template_description').value = '';
+        document.getElementById('template_active').checked = true;
+        
+        formTitle.textContent = 'Add New Template';
+    }
+    
+    // Default Services functionality
+    const addServiceBtn = document.getElementById('addDefaultServiceBtn');
+    const servicesTable = document.getElementById('defaultServicesTable').getElementsByTagName('tbody')[0];
+    
+    // Load default services from settings
+    const defaultServices = [
+        { name: 'General Consultation', category: 'Consultation', price: '{{ settings.get("default_consultation_fee", "50") }}' },
+        { name: 'Specialist Consultation', category: 'Consultation', price: '{{ settings.get("default_specialist_fee", "100") }}' },
+        { name: 'Lab Panel - Basic', category: 'Laboratory', price: '{{ settings.get("default_lab_panel_price", "25") }}' },
+        { name: 'Lab Panel - Comprehensive', category: 'Laboratory', price: '{{ settings.get("default_lab_panel_comprehensive_price", "50") }}' },
+        { name: 'X-Ray', category: 'Imaging', price: '{{ settings.get("default_imaging_price", "100") }}' },
+        { name: 'Ultrasound', category: 'Imaging', price: '{{ settings.get("default_ultrasound_price", "150") }}' },
+        { name: 'Minor Procedure', category: 'Procedure', price: '{{ settings.get("default_procedure_price", "150") }}' },
+        { name: 'Emergency Fee', category: 'Emergency', price: '{{ settings.get("default_emergency_fee", "100") }}' },
+        { name: 'Follow-up Consultation', category: 'Consultation', price: '{{ settings.get("default_followup_fee", "30") }}' }
+    ];
+    
+    // Populate the default services table
+    function populateDefaultServices() {
+        servicesTable.innerHTML = '';
+        defaultServices.forEach((service, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <input type="hidden" name="service_id_${index}" value="${index}">
+                    <input type="text" class="form-control form-control-sm" name="service_name_${index}" value="${service.name}" readonly>
+                </td>
+                <td>
+                    <select class="form-select form-select-sm" name="service_category_${index}">
+                        <option value="Consultation" ${service.category === 'Consultation' ? 'selected' : ''}>Consultation</option>
+                        <option value="Laboratory" ${service.category === 'Laboratory' ? 'selected' : ''}>Laboratory</option>
+                        <option value="Imaging" ${service.category === 'Imaging' ? 'selected' : ''}>Imaging</option>
+                        <option value="Procedure" ${service.category === 'Procedure' ? 'selected' : ''}>Procedure</option>
+                        <option value="Emergency" ${service.category === 'Emergency' ? 'selected' : ''}>Emergency</option>
+                        <option value="Other" ${service.category === 'Other' ? 'selected' : ''}>Other</option>
+                    </select>
+                </td>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">{{ settings.get('currency_symbol', '$') }}</span>
+                        <input type="number" class="form-control" name="service_price_${index}" value="${service.price}" min="0" step="0.01">
+                    </div>
+                </td>
+                <td>
+                    <input type="hidden" name="service_count" value="${defaultServices.length}">
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-service">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            servicesTable.appendChild(row);
+        });
+    }
+    
+    // Add new service row
+    addServiceBtn.addEventListener('click', function() {
+        const index = servicesTable.rows.length;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <input type="hidden" name="service_id_${index}" value="new_${index}">
+                <input type="text" class="form-control form-control-sm" name="service_name_${index}" placeholder="Service Name">
+            </td>
+            <td>
+                <select class="form-select form-select-sm" name="service_category_${index}">
+                    <option value="Consultation">Consultation</option>
+                    <option value="Laboratory">Laboratory</option>
+                    <option value="Imaging">Imaging</option>
+                    <option value="Procedure">Procedure</option>
+                    <option value="Emergency">Emergency</option>
+                    <option value="Other">Other</option>
+                </select>
+            </td>
+            <td>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">{{ settings.get('currency_symbol', '$') }}</span>
+                    <input type="number" class="form-control" name="service_price_${index}" placeholder="0.00" min="0" step="0.01">
+                </div>
+            </td>
+            <td>
+                <input type="hidden" name="service_count" value="${index + 1}">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-service">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        servicesTable.appendChild(row);
+    });
+    
+    // Remove service row
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-service')) {
+            e.target.closest('tr').remove();
+        }
+    });
+    
+    // Initialize the default services table
+    populateDefaultServices();
+});
+</script>
+{% endblock %}

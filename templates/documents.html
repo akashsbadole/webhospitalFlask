@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Document Management - Hospital Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-file-alt"></i> Document Management</h4>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-success mb-3" data-toggle="modal" data-target="#uploadModal">
+                        <i class="fas fa-upload"></i> Upload Document
+                    </button>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Document Name</th>
+                                    <th>Type</th>
+                                    <th>Related To</th>
+                                    <th>Uploaded By</th>
+                                    <th>Upload Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if documents %}
+                                {% for doc in documents %}
+                                <tr>
+                                    <td>{{ doc.name }}</td>
+                                    <td><span class="badge badge-info">{{ doc.type }}</span></td>
+                                    <td>{{ doc.related_to }}</td>
+                                    <td>{{ doc.uploaded_by }}</td>
+                                    <td>{{ doc.upload_date }}</td>
+                                    <td>
+                                        <a href="#" class="btn btn-sm btn-primary"><i class="fas fa-download"></i></a>
+                                        <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No documents found</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Document</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form method="POST" action="{{ url_for('upload_document') }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Document Type</label>
+                        <select name="document_type" class="form-control" required>
+                            <option value="medical_record">Medical Record</option>
+                            <option value="lab_report">Lab Report</option>
+                            <option value="prescription">Prescription</option>
+                            <option value="consent_form">Consent Form</option>
+                            <option value="insurance">Insurance Document</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Related To</label>
+                        <select name="related_to" class="form-control">
+                            <option value="patient">Patient</option>
+                            <option value="staff">Staff</option>
+                            <option value="general">General</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Related ID</label>
+                        <input type="number" name="related_id" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>Select File</label>
+                        <input type="file" name="file" class="form-control-file" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

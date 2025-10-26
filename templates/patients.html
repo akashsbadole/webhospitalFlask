@@ -1,0 +1,293 @@
+{% extends "base.html" %} {% block title %}Patients - {{ get_text('title') }}{%
+endblock %} {% block content %}
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <h2>
+        <i class="fas fa-users text-primary"></i>
+        {{ get_text('patients') }}
+      </h2>
+    </div>
+    <div class="col-md-6 text-end">
+      <a href="{{ url_for('add_patient') }}" class="btn btn-primary">
+        <i class="fas fa-user-plus"></i> Add New Patient
+      </a>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <form method="GET" class="row g-3">
+            <div class="col-md-8">
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="fas fa-search"></i>
+                </span>
+                <input
+                  type="text"
+                  class="form-control"
+                  name="search"
+                  value="{{ search }}"
+                  placeholder="Search by name, ID, or phone..."
+                />
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="d-grid d-md-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-search"></i> Search
+                </button>
+                <a
+                  href="{{ url_for('patients') }}"
+                  class="btn btn-outline-secondary"
+                >
+                  <i class="fas fa-times"></i> Clear
+                </a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Patients Table -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-list"></i> Patient List
+            <span class="badge bg-primary ms-2"
+              >{{ patients.total }} total</span
+            >
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          {% if patients.items %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Patient ID</th>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>Age/Gender</th>
+                  <th>Blood Group</th>
+                  <th>Registered</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for patient in patients.items %}
+                <tr>
+                  <td>
+                    <span class="fw-bold text-primary"
+                      >{{ patient.patient_id }}</span
+                    >
+                  </td>
+                  <td>
+                    <div>
+                      <strong
+                        >{{ patient.first_name }} {{ patient.last_name
+                        }}</strong
+                      >
+                      {% if patient.email %}
+                      <br /><small class="text-muted"
+                        >{{ patient.email }}</small
+                      >
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td>
+                    <i class="fas fa-phone text-success"></i>
+                    {{ patient.phone }}
+                  </td>
+                  <td>
+                    {% if patient.date_of_birth %} {% set age =
+                    ((datetime.now().date() - patient.date_of_birth).days //
+                    365) %} {{ age }} years {% endif %} {% if patient.gender %}
+                    <br /><small class="text-muted">{{ patient.gender }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if patient.blood_group %}
+                    <span class="badge bg-danger"
+                      >{{ patient.blood_group }}</span
+                    >
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <small class="text-muted">
+                      {{ patient.created_at.strftime('%m/%d/%Y') }}
+                    </small>
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <button
+                        class="btn btn-outline-primary"
+                        onclick="viewPatient('{{ patient.id }}')"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button
+                        class="btn btn-outline-success"
+                        onclick="bookAppointment('{{ patient.id }}')"
+                      >
+                        <i class="fas fa-calendar-plus"></i>
+                      </button>
+                      <a
+                        href="{{ url_for('edit_patient', patient_id=patient.id) }}"
+                        class="btn btn-outline-info"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          {% if patients.pages > 1 %}
+          <div class="card-footer">
+            <nav aria-label="Patient pagination">
+              <ul class="pagination justify-content-center mb-0">
+                {% if patients.has_prev %}
+                <li class="page-item">
+                  <a
+                    class="page-link"
+                    href="{{ url_for('patients', page=patients.prev_num, search=search) }}"
+                  >
+                    <i class="fas fa-chevron-left"></i> Previous
+                  </a>
+                </li>
+                {% endif %} {% for page_num in patients.iter_pages() %} {% if
+                page_num %} {% if page_num != patients.page %}
+                <li class="page-item">
+                  <a
+                    class="page-link"
+                    href="{{ url_for('patients', page=page_num, search=search) }}"
+                    >{{ page_num }}</a
+                  >
+                </li>
+                {% else %}
+                <li class="page-item active">
+                  <span class="page-link">{{ page_num }}</span>
+                </li>
+                {% endif %} {% else %}
+                <li class="page-item disabled">
+                  <span class="page-link">...</span>
+                </li>
+                {% endif %} {% endfor %} {% if patients.has_next %}
+                <li class="page-item">
+                  <a
+                    class="page-link"
+                    href="{{ url_for('patients', page=patients.next_num, search=search) }}"
+                  >
+                    Next <i class="fas fa-chevron-right"></i>
+                  </a>
+                </li>
+                {% endif %}
+              </ul>
+            </nav>
+          </div>
+          {% endif %} {% else %}
+          <div class="text-center py-5">
+            <i class="fas fa-users fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No patients found</h4>
+            {% if search %}
+            <p class="text-muted">No patients match your search criteria.</p>
+            <a href="{{ url_for('patients') }}" class="btn btn-outline-primary"
+              >View All Patients</a
+            >
+            {% else %}
+            <p class="text-muted">Start by adding your first patient.</p>
+            <a href="{{ url_for('add_patient') }}" class="btn btn-primary"
+              >Add First Patient</a
+            >
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Patient Details Modal -->
+<div class="modal fade" id="patientModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-user text-primary"></i> Patient Details
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body" id="patientDetails">
+        <!-- Patient details will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function viewPatient(patientId) {
+    // In a real application, this would fetch patient details via API
+    const modal = new bootstrap.Modal(document.getElementById("patientModal"));
+    document.getElementById("patientDetails").innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-2">Loading patient details...</p>
+        </div>
+    `;
+    modal.show();
+
+    // Simulate API call
+    setTimeout(() => {
+      document.getElementById("patientDetails").innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Personal Information</h6>
+                    <p><strong>Patient ID:</strong> P000${patientId}</p>
+                    <p><strong>Name:</strong> John Doe</p>
+                    <p><strong>Phone:</strong> +1 234 567 8900</p>
+                    <p><strong>Email:</strong> john.doe@email.com</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Medical Information</h6>
+                    <p><strong>Blood Group:</strong> O+</p>
+                    <p><strong>Allergies:</strong> None</p>
+                    <p><strong>Emergency Contact:</strong> Jane Doe</p>
+                    <p><strong>Emergency Phone:</strong> +1 234 567 8901</p>
+                </div>
+            </div>
+        `;
+    }, 1000);
+  }
+
+  function bookAppointment(patientId) {
+    window.location.href =
+      '{{ url_for("add_appointment") }}?patient_id=' + patientId;
+  }
+
+  function editPatient(patientId) {
+    // In a real application, this would redirect to edit form
+    window.location.href =
+      "{{ url_for('edit_patient', patient_id=0) }}".replace('0', patientId);
+  }
+</script>
+{% endblock %}

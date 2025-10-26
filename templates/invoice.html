@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Invoice - {{ bill.bill_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="invoice-header">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h2><i class="fas fa-hospital-alt"></i> MediCare Pro</h2>
+                            <p class="mb-0">123 Healthcare Avenue<br>
+                                Medical District, City 12345<br>
+                                Phone: (555) 123-4567<br>
+                                Email: info@medicarepo.com</p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <h3>INVOICE</h3>
+                            <p class="mb-0">
+                                <strong>Invoice #:</strong> {{ bill.bill_number }}<br>
+                                <strong>Date:</strong> {{ bill.bill_date.strftime('%Y-%m-%d') }}<br>
+                                <strong>Due Date:</strong> {{ (bill.bill_date + timedelta(days=30)).strftime('%Y-%m-%d')
+                                }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="invoice-body">
+                    <!-- Patient Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Bill To:</h5>
+                            <p>
+                                <strong>{{ bill.patient.first_name }} {{ bill.patient.last_name }}</strong><br>
+                                Patient ID: {{ bill.patient.patient_id }}<br>
+                                {% if bill.patient.address %}{{ bill.patient.address }}<br>{% endif %}
+                                Phone: {{ bill.patient.phone }}<br>
+                                {% if bill.patient.email %}Email: {{ bill.patient.email }}{% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Bill Details:</h5>
+                            <p>
+                                <strong>Bill Type:</strong> {{ bill.bill_type.upper() }}<br>
+                                <strong>Created By:</strong> {{ bill.created_by_user.full_name if bill.created_by_user
+                                else 'System' }}<br>
+                                <strong>Payment Status:</strong>
+                                <span
+                                    class="badge bg-{{ 'success' if bill.payment_status == 'paid' else 'warning' if bill.payment_status == 'partial' else 'danger' }}">
+                                    {{ bill.payment_status.title() }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Services/Items Table -->
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-center">Quantity</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in bill.items %}
+                                <tr>
+                                    <td>{{ item.service_name }}</td>
+                                    <td class="text-center">{{ item.quantity }}</td>
+                                    <td class="text-end">${{ "%.2f"|format(item.unit_price) }}</td>
+                                    <td class="text-end">${{ "%.2f"|format(item.total_price) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Totals -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Payment Information -->
+                            {% if bill.payments %}
+                            <h6>Payment History:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Method</th>
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for payment in bill.payments %}
+                                        <tr>
+                                            <td>{{ payment.payment_date.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ payment.payment_method.title() }}</td>
+                                            <td>${{ "%.2f"|format(payment.amount) }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="invoice-total">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Subtotal:</span>
+                                    <span>${{ "%.2f"|format(bill.subtotal) }}</span>
+                                </div>
+
+                                {% if bill.discount > 0 %}
+                                <div class="d-flex justify-content-between mb-2 text-success">
+                                    <span>Discount:</span>
+                                    <span>-${{ "%.2f"|format(bill.discount) }}</span>
+                                </div>
+                                {% endif %}
+
+                                {% if bill.tax_amount > 0 %}
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Tax:</span>
+                                    <span>${{ "%.2f"|format(bill.tax_amount) }}</span>
+                                </div>
+                                {% endif %}
+
+                                <hr>
+
+                                <div class="d-flex justify-content-between mb-2">
+                                    <strong>Total Amount:</strong>
+                                    <strong>${{ "%.2f"|format(bill.total_amount) }}</strong>
+                                </div>
+
+                                <div class="d-flex justify-content-between mb-2 text-success">
+                                    <span>Paid Amount:</span>
+                                    <span>${{ "%.2f"|format(bill.paid_amount) }}</span>
+                                </div>
+
+                                {% if bill.balance_amount > 0 %}
+                                <div class="d-flex justify-content-between text-danger">
+                                    <strong>Balance Due:</strong>
+                                    <strong>${{ "%.2f"|format(bill.balance_amount) }}</strong>
+                                </div>
+                                {% else %}
+                                <div class="d-flex justify-content-between text-success">
+                                    <strong>Status:</strong>
+                                    <strong>PAID IN FULL</strong>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <hr>
+                            <p class="text-muted text-center">
+                                <small>
+                                    Thank you for choosing MediCare Pro for your healthcare needs.<br>
+                                    For billing inquiries, please contact our billing department at (555) 123-4567 ext.
+                                    2<br>
+                                    Payment is due within 30 days of invoice date.
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row mt-3">
+                        <div class="col-md-12 text-center">
+                            <button onclick="window.print()" class="btn btn-primary">
+                                <i class="fas fa-print"></i> Print Invoice
+                            </button>
+
+                            <a href="{{ url_for('print_invoice', bill_id=bill.id) }}" target="_blank"
+                                class="btn btn-secondary">
+                                <i class="fas fa-file-pdf"></i> PDF Version
+                            </a>
+
+                            {% if bill.balance_amount > 0 %}
+                            <a href="{{ url_for('add_payment', bill_id=bill.id) }}" class="btn btn-success">
+                                <i class="fas fa-money-bill"></i> Record Payment
+                            </a>
+                            {% endif %}
+
+                            <button onclick="emailInvoice()" class="btn btn-info">
+                                <i class="fas fa-envelope"></i> Email Invoice
+                            </button>
+
+                            <a href="{{ url_for('billing') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Billing
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function emailInvoice() {
+        if (confirm('Send invoice to patient email: {{ bill.patient.email }}?')) {
+            fetch('/invoice/{{ bill.id }}/email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Invoice sent successfully!');
+                    } else {
+                        alert('Failed to send invoice: ' + data.message);
+                    }
+                });
+        }
+    }
+</script>
+
+<style>
+    @media print {
+
+        .btn,
+        .navbar,
+        footer {
+            display: none !important;
+        }
+
+        .invoice-header {
+            background: #1e3a8a !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .card {
+            box-shadow: none !important;
+            border: none !important;
+        }
+    }
+</style>
+{% endblock %}

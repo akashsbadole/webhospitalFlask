@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - {{ bill.bill_number }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .invoice-header {
+            background: #1e3a8a;
+            color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .invoice-header h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .invoice-header p {
+            margin: 5px 0;
+        }
+
+        .invoice-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .bill-to,
+        .bill-details {
+            width: 48%;
+        }
+
+        .bill-to h5,
+        .bill-details h5 {
+            margin-bottom: 10px;
+            color: #1e3a8a;
+            border-bottom: 2px solid #1e3a8a;
+            padding-bottom: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table th,
+        table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .text-end {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .totals {
+            width: 50%;
+            margin-left: auto;
+            border: 2px solid #1e3a8a;
+            padding: 15px;
+        }
+
+        .totals .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .totals .final-total {
+            border-top: 2px solid #1e3a8a;
+            padding-top: 8px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+
+        .status-paid {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+                padding: 15px;
+            }
+
+            .invoice-header {
+                background: #1e3a8a !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Invoice Header -->
+    <div class="invoice-header">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2>🏥 MediCare Pro</h2>
+                <p>123 Healthcare Avenue<br>
+                    Medical District, City 12345<br>
+                    Phone: (555) 123-4567<br>
+                    Email: info@medicarepo.com</p>
+            </div>
+            <div style="text-align: right;">
+                <h3>INVOICE</h3>
+                <p>
+                    <strong>Invoice #:</strong> {{ bill.bill_number }}<br>
+                    <strong>Date:</strong> {{ bill.bill_date.strftime('%Y-%m-%d') }}<br>
+                    <strong>Due Date:</strong> {{ (bill.bill_date + timedelta(days=30)).strftime('%Y-%m-%d') }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient and Bill Information -->
+    <div class="invoice-info">
+        <div class="bill-to">
+            <h5>Bill To:</h5>
+            <p>
+                <strong>{{ bill.patient.first_name }} {{ bill.patient.last_name }}</strong><br>
+                Patient ID: {{ bill.patient.patient_id }}<br>
+                {% if bill.patient.address %}{{ bill.patient.address }}<br>{% endif %}
+                Phone: {{ bill.patient.phone }}<br>
+                {% if bill.patient.email %}Email: {{ bill.patient.email }}{% endif %}
+            </p>
+        </div>
+        <div class="bill-details">
+            <h5>Bill Details:</h5>
+            <p>
+                <strong>Bill Type:</strong> {{ bill.bill_type.upper() }}<br>
+                <strong>Created By:</strong> {{ bill.created_by_user.full_name if bill.created_by_user else 'System'
+                }}<br>
+                <strong>Payment Status:</strong>
+                <span class="status-{{ 'paid' if bill.payment_status == 'paid' else 'pending' }}">
+                    {{ bill.payment_status.upper() }}
+                </span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Services/Items Table -->
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th class="text-center">Quantity</th>
+                <th class="text-end">Unit Price</th>
+                <th class="text-end">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in bill.items %}
+            <tr>
+                <td>{{ item.service_name }}</td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td class="text-end">${{ "%.2f"|format(item.unit_price) }}</td>
+                <td class="text-end">${{ "%.2f"|format(item.total_price) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Payment History (if any) -->
+    {% if bill.payments %}
+    <div style="margin-bottom: 20px;">
+        <h5>Payment History:</h5>
+        <table style="width: 60%;">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Method</th>
+                    <th class="text-end">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in bill.payments %}
+                <tr>
+                    <td>{{ payment.payment_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ payment.payment_method.title() }}</td>
+                    <td class="text-end">${{ "%.2f"|format(payment.amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Totals -->
+    <div class="totals">
+        <div class="total-row">
+            <span>Subtotal:</span>
+            <span>${{ "%.2f"|format(bill.subtotal) }}</span>
+        </div>
+
+        {% if bill.discount > 0 %}
+        <div class="total-row" style="color: #28a745;">
+            <span>Discount:</span>
+            <span>-${{ "%.2f"|format(bill.discount) }}</span>
+        </div>
+        {% endif %}
+
+        {% if bill.tax_amount > 0 %}
+        <div class="total-row">
+            <span>Tax:</span>
+            <span>${{ "%.2f"|format(bill.tax_amount) }}</span>
+        </div>
+        {% endif %}
+
+        <div class="total-row final-total">
+            <span>Total Amount:</span>
+            <span>${{ "%.2f"|format(bill.total_amount) }}</span>
+        </div>
+
+        <div class="total-row" style="color: #28a745;">
+            <span>Paid Amount:</span>
+            <span>${{ "%.2f"|format(bill.paid_amount) }}</span>
+        </div>
+
+        {% if bill.balance_amount > 0 %}
+        <div class="total-row" style="color: #dc3545;">
+            <span><strong>Balance Due:</strong></span>
+            <span><strong>${{ "%.2f"|format(bill.balance_amount) }}</strong></span>
+        </div>
+        {% else %}
+        <div class="total-row" style="color: #28a745;">
+            <span><strong>Status:</strong></span>
+            <span><strong>PAID IN FULL</strong></span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>
+            Thank you for choosing MediCare Pro for your healthcare needs.<br>
+            For billing inquiries, please contact our billing department at (555) 123-4567 ext. 2<br>
+            Payment is due within 30 days of invoice date.
+        </p>
+        <p style="margin-top: 20px;">
+            <small>This is a computer-generated invoice. No signature required.</small>
+        </p>
+    </div>
+
+    <script>
+        // Auto-print when page loads
+        window.onload = function () {
+            window.print();
+        };
+    </script>
+</body>
+
+</html>

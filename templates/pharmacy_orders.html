@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Pharmacy Orders{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Pharmacy Orders</h4>
+                    <div>
+                        <button class="btn btn-primary" onclick="newOrder()">
+                            <i class="fas fa-plus"></i> New Order
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select class="form-select" onchange="filterByStatus(this.value)">
+                                <option value="">All Status</option>
+                                <option value="pending" {{ 'selected' if status_filter=='pending' }}>Pending</option>
+                                <option value="dispensed" {{ 'selected' if status_filter=='dispensed' }}>Dispensed
+                                </option>
+                                <option value="cancelled" {{ 'selected' if status_filter=='cancelled' }}>Cancelled
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" placeholder="From Date" onchange="filterByDate()">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" placeholder="Search patient..."
+                                onkeyup="searchOrders(this.value)">
+                        </div>
+                    </div>
+
+                    <!-- Orders Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Patient</th>
+                                    <th>Prescription</th>
+                                    <th>Order Date</th>
+                                    <th>Total Amount</th>
+                                    <th>Payment Status</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders.items %}
+                                <tr>
+                                    <td><strong>{{ order.id }}</strong></td>
+                                    <td>
+                                        {{ order.patient.first_name }} {{ order.patient.last_name }}<br>
+                                        <small class="text-muted">{{ order.patient.patient_id }}</small>
+                                    </td>
+                                    <td>
+                                        {% if order.prescription %}
+                                        <a href="#" onclick="viewPrescription({{ order.prescription.id }})">
+                                            Prescription #{{ order.prescription.id }}
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">Direct Sale</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ order.order_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>${{ "%.2f"|format(order.final_amount) }}</td>
+                                    <td>
+                                        <span
+                                            class="badge bg-{{ 'success' if order.payment_status == 'paid' else 'warning' }}">
+                                            {{ order.payment_status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge bg-{{ 'success' if order.status == 'dispensed' else 'warning' if order.status == 'pending' else 'danger' }}">
+                                            {{ order.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if order.status == 'pending' %}
+                                        <button class="btn btn-sm btn-success" onclick="dispenseOrder({{ order.id }})">
+                                            <i class="fas fa-pills"></i> Dispense
+                                        </button>
+                                        {% endif %}
+
+                                        <button class="btn btn-sm btn-info" onclick="viewOrder({{ order.id }})">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+
+                                        {% if order.status == 'dispensed' %}
+                                        <button class="btn btn-sm btn-secondary" onclick="printReceipt({{ order.id }})">
+                                            <i class="fas fa-print"></i> Receipt
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if orders.pages > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if orders.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="{{ url_for('pharmacy_orders', page=orders.prev_num, status=status_filter) }}">Previous</a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in orders.iter_pages() %}
+                            {% if page_num %}
+                            {% if page_num != orders.page %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="{{ url_for('pharmacy_orders', page=page_num, status=status_filter) }}">{{
+                                    page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if orders.has_next %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="{{ url_for('pharmacy_orders', page=orders.next_num, status=status_filter) }}">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Summary -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Sales Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-primary">{{ total_orders or 0 }}</h3>
+                            <p>Total Orders</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-success">{{ dispensed_orders or 0 }}</h3>
+                            <p>Dispensed</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-warning">{{ pending_orders or 0 }}</h3>
+                            <p>Pending</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-info">${{ total_sales or 0 }}</h3>
+                            <p>Total Sales</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterByStatus(status) {
+        const url = new URL(window.location);
+        if (status) {
+            url.searchParams.set('status', status);
+        } else {
+            url.searchParams.delete('status');
+        }
+        window.location = url;
+    }
+
+    function filterByDate() {
+        // Implementation for date filtering
+        console.log('Date filter functionality');
+    }
+
+    function searchOrders(query) {
+        // Implementation for search functionality
+        console.log('Search functionality:', query);
+    }
+
+    function newOrder() {
+        // Implementation for creating new order
+        alert('New order functionality');
+    }
+
+    function dispenseOrder(orderId) {
+        if (confirm('Are you sure you want to dispense this order?')) {
+            fetch('/pharmacy/order/' + orderId + '/dispense', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Failed to dispense order: ' + data.message);
+                    }
+                });
+        }
+    }
+
+    function viewOrder(orderId) {
+        // Implementation for viewing order details
+        alert('View order functionality - ID: ' + orderId);
+    }
+
+    function viewPrescription(prescriptionId) {
+        // Implementation for viewing prescription
+        alert('View prescription functionality - ID: ' + prescriptionId);
+    }
+
+    function printReceipt(orderId) {
+        // Implementation for printing receipt
+        window.open('/pharmacy/order/' + orderId + '/receipt', '_blank');
+    }
+</script>
+{% endblock %}

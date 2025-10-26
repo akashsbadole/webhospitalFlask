@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Create Bill{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-file-invoice-dollar text-success"></i> Create New Bill</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" hx-post="{{ url_for('create_bill') }}" hx-target="#bill-result">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="patient_id" class="form-label">Patient *</label>
+                                    <select class="form-select" id="patient_id" name="patient_id" required
+                                        hx-get="/api/patient-billing-info" hx-target="#patient-billing-info"
+                                        hx-trigger="change">
+                                        <option value="">Select Patient</option>
+                                        {% for patient in patients %}
+                                        <option value="{{ patient.id }}">{{ patient.patient_id }} - {{
+                                            patient.first_name }} {{ patient.last_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="bill_type" class="form-label">Bill Type *</label>
+                                    <select class="form-select" id="bill_type" name="bill_type" required>
+                                        <option value="">Select Type</option>
+                                        <option value="opd">OPD (Outpatient)</option>
+                                        <option value="ipd">IPD (Inpatient)</option>
+                                        <option value="lab">Laboratory</option>
+                                        <option value="pharmacy">Pharmacy</option>
+                                        <option value="imaging">Imaging</option>
+                                        <option value="procedure">Procedure</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="bill_date" class="form-label">Bill Date</label>
+                                    <input type="datetime-local" class="form-control" id="bill_date" name="bill_date"
+                                        value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="reference" class="form-label">Reference</label>
+                                    <input type="text" class="form-control" id="reference" name="reference"
+                                        placeholder="Admission ID, Prescription ID, etc.">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bill Items -->
+                        <div class="card mt-3">
+                            <div class="card-header d-flex justify-content-between">
+                                <h6>Bill Items</h6>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="addBillItem()">
+                                    <i class="fas fa-plus"></i> Add Item
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="bill-items">
+                                    <div class="row bill-item mb-2">
+                                        <div class="col-md-5">
+                                            <select class="form-select" name="service_name" required
+                                                onchange="updatePrice(this)">
+                                                <option value="">Select Service</option>
+                                                {% for service in services %}
+                                                <option value="{{ service.name }}" data-price="{{ service.price }}">{{
+                                                    service.name }} - ${{ service.price }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="number" class="form-control" name="quantity" value="1" min="1"
+                                                onchange="calculateItemTotal(this)" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="number" class="form-control" name="unit_price" step="0.01"
+                                                onchange="calculateItemTotal(this)" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="number" class="form-control item-total" name="item_total"
+                                                readonly>
+                                        </div>
+                                        <div class="col-md-1">
+                                            <button type="button" class="btn btn-sm btn-danger"
+                                                onclick="removeBillItem(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col-md-8"></div>
+                                    <div class="col-md-4">
+                                        <table class="table table-sm">
+                                            <tr>
+                                                <td>Subtotal:</td>
+                                                <td><input type="number" class="form-control form-control-sm"
+                                                        id="subtotal" name="subtotal" readonly></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Discount:</td>
+                                                <td><input type="number" class="form-control form-control-sm"
+                                                        id="discount" name="discount" value="0" step="0.01"
+                                                        onchange="calculateTotal()"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Tax (%):</td>
+                                                <td><input type="number" class="form-control form-control-sm"
+                                                        id="tax_rate" value="0" step="0.01" onchange="calculateTotal()">
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><input type="hidden" id="tax_amount" name="tax_amount"></td>
+                                            </tr>
+                                            <tr class="fw-bold">
+                                                <td>Total:</td>
+                                                <td><input type="number" class="form-control form-control-sm fw-bold"
+                                                        id="total_amount" name="total_amount" readonly></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="bill-result" class="mt-3"></div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> Create Bill
+                                </button>
+                                <a href="{{ url_for('billing') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-user"></i> Patient Information</h5>
+                </div>
+                <div class="card-body" id="patient-billing-info">
+                    <p class="text-muted">Select a patient to view billing information</p>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Billing Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled small">
+                        <li><i class="fas fa-check text-success"></i> Verify patient insurance details</li>
+                        <li><i class="fas fa-check text-success"></i> Add all applicable services</li>
+                        <li><i class="fas fa-check text-success"></i> Apply appropriate discounts</li>
+                        <li><i class="fas fa-check text-success"></i> Calculate tax as per regulations</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function addBillItem() {
+        const billItems = document.getElementById('bill-items');
+        const newItem = document.querySelector('.bill-item').cloneNode(true);
+
+        // Clear values
+        newItem.querySelectorAll('input, select').forEach(input => {
+            if (input.type === 'number') {
+                input.value = input.name === 'quantity' ? '1' : '';
+            } else {
+                input.value = '';
+            }
+        });
+
+        billItems.appendChild(newItem);
+    }
+
+    function removeBillItem(button) {
+        const billItems = document.getElementById('bill-items');
+        if (billItems.children.length > 1) {
+            button.closest('.bill-item').remove();
+            calculateTotal();
+        }
+    }
+
+    function updatePrice(select) {
+        const price = select.options[select.selectedIndex].dataset.price;
+        const row = select.closest('.bill-item');
+        const priceInput = row.querySelector('input[name="unit_price"]');
+
+        if (price) {
+            priceInput.value = price;
+            calculateItemTotal(priceInput);
+        }
+    }
+
+    function calculateItemTotal(input) {
+        const row = input.closest('.bill-item');
+        const quantity = parseFloat(row.querySelector('input[name="quantity"]').value) || 0;
+        const unitPrice = parseFloat(row.querySelector('input[name="unit_price"]').value) || 0;
+        const total = quantity * unitPrice;
+
+        row.querySelector('.item-total').value = total.toFixed(2);
+        calculateTotal();
+    }
+
+    function calculateTotal() {
+        let subtotal = 0;
+
+        document.querySelectorAll('.item-total').forEach(input => {
+            subtotal += parseFloat(input.value) || 0;
+        });
+
+        const discount = parseFloat(document.getElementById('discount').value) || 0;
+        const taxRate = parseFloat(document.getElementById('tax_rate').value) || 0;
+
+        const discountedAmount = subtotal - discount;
+        const taxAmount = (discountedAmount * taxRate) / 100;
+        const total = discountedAmount + taxAmount;
+
+        document.getElementById('subtotal').value = subtotal.toFixed(2);
+        document.getElementById('tax_amount').value = taxAmount.toFixed(2);
+        document.getElementById('total_amount').value = total.toFixed(2);
+    }
+
+    // Initialize calculations
+    document.addEventListener('DOMContentLoaded', function () {
+        calculateTotal();
+    });
+</script>
+{% endblock %}

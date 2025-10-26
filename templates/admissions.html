@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Admissions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Patient Admissions</h4>
+                    {% if current_user.role in ['admin', 'doctor'] %}
+                    <a href="{{ url_for('add_admission') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Admission
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select class="form-select" onchange="filterByStatus(this.value)">
+                                <option value="">All Status</option>
+                                <option value="admitted" {{ 'selected' if status_filter=='admitted' }}>Admitted</option>
+                                <option value="discharged" {{ 'selected' if status_filter=='discharged' }}>Discharged
+                                </option>
+                                <option value="transferred" {{ 'selected' if status_filter=='transferred' }}>Transferred
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Admissions Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Admission ID</th>
+                                    <th>Patient</th>
+                                    <th>Doctor</th>
+                                    <th>Ward/Bed</th>
+                                    <th>Admission Date</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for admission in admissions.items %}
+                                <tr>
+                                    <td>{{ admission.id }}</td>
+                                    <td>
+                                        <strong>{{ admission.patient.first_name }} {{ admission.patient.last_name
+                                            }}</strong><br>
+                                        <small class="text-muted">{{ admission.patient.patient_id }}</small>
+                                    </td>
+                                    <td>{{ admission.doctor.full_name }}</td>
+                                    <td>
+                                        {{ admission.bed.ward.name }}<br>
+                                        <small class="text-muted">Bed {{ admission.bed.bed_number }}</small>
+                                    </td>
+                                    <td>{{ admission.admission_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <span
+                                            class="badge bg-{{ 'danger' if admission.admission_type == 'emergency' else 'info' }}">
+                                            {{ admission.admission_type.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="badge bg-{{ 'success' if admission.status == 'admitted' else 'secondary' }}">
+                                            {{ admission.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if admission.status == 'admitted' and current_user.role == 'doctor' %}
+                                        <a href="{{ url_for('discharge_patient', admission_id=admission.id) }}"
+                                            class="btn btn-sm btn-warning">
+                                            <i class="fas fa-sign-out-alt"></i> Discharge
+                                        </a>
+                                        {% endif %}
+
+                                        <button class="btn btn-sm btn-info" onclick="viewAdmission({{ admission.id }})">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+
+                                        {% if admission.status == 'discharged' %}
+                                        <button class="btn btn-sm btn-secondary"
+                                            onclick="printDischarge({{ admission.id }})">
+                                            <i class="fas fa-print"></i> Summary
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if admissions.pages > 1 %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if admissions.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="{{ url_for('admissions', page=admissions.prev_num, status=status_filter) }}">Previous</a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in admissions.iter_pages() %}
+                            {% if page_num %}
+                            {% if page_num != admissions.page %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="{{ url_for('admissions', page=page_num, status=status_filter) }}">{{ page_num
+                                    }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if admissions.has_next %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="{{ url_for('admissions', page=admissions.next_num, status=status_filter) }}">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bed Occupancy Summary -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Bed Occupancy Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-primary">{{ total_beds or 0 }}</h3>
+                            <p>Total Beds</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-success">{{ available_beds or 0 }}</h3>
+                            <p>Available</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-warning">{{ occupied_beds or 0 }}</h3>
+                            <p>Occupied</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3 class="text-info">{{ occupancy_rate or 0 }}%</h3>
+                            <p>Occupancy Rate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterByStatus(status) {
+        const url = new URL(window.location);
+        if (status) {
+            url.searchParams.set('status', status);
+        } else {
+            url.searchParams.delete('status');
+        }
+        window.location = url;
+    }
+
+    function viewAdmission(admissionId) {
+        // Implementation for viewing admission details
+        alert('View admission functionality - ID: ' + admissionId);
+    }
+
+    function printDischarge(admissionId) {
+        // Implementation for printing discharge summary
+        window.open('/admission/' + admissionId + '/discharge-summary', '_blank');
+    }
+</script>
+{% endblock %}

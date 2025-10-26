@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Data Import{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Data Import</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Import Patient Data</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form method="POST" action="{{ url_for('import_patients') }}"
+                                        enctype="multipart/form-data">
+                                        <div class="form-group">
+                                            <label for="file">Select File:</label>
+                                            <input type="file" class="form-control-file" id="file" name="file"
+                                                accept=".csv,.json" required>
+                                            <small class="form-text text-muted">
+                                                Supported formats: CSV, HL7 FHIR JSON
+                                            </small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="validate_only"
+                                                    id="validateOnly" value="true">
+                                                <label class="form-check-label" for="validateOnly">
+                                                    Validate Only (Don't Import)
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-upload"></i> Import Data
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Import Guidelines</h5>
+                                </div>
+                                <div class="card-body">
+                                    <h6>CSV Format Requirements:</h6>
+                                    <ul class="small">
+                                        <li>Required fields: first_name, last_name</li>
+                                        <li>Optional fields: email, phone, date_of_birth, gender, address, etc.</li>
+                                        <li>Date format: YYYY-MM-DD</li>
+                                        <li>First row should contain column headers</li>
+                                    </ul>
+
+                                    <h6>HL7 FHIR Format:</h6>
+                                    <ul class="small">
+                                        <li>Must be a valid FHIR Bundle</li>
+                                        <li>Patient resources will be imported</li>
+                                        <li>Observation resources will be imported as medical records</li>
+                                    </ul>
+
+                                    <div class="alert alert-warning">
+                                        <strong>Warning:</strong> Always validate your data before importing.
+                                        Duplicate patient IDs will be skipped.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Sample Templates -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5>Download Sample Templates</h5>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary"
+                                    onclick="downloadTemplate('csv')">
+                                    <i class="fas fa-file-csv"></i> CSV Template
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary"
+                                    onclick="downloadTemplate('fhir')">
+                                    <i class="fas fa-file-code"></i> FHIR Template
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function downloadTemplate(format) {
+        if (format === 'csv') {
+            // Create CSV template
+            const csvContent = `patient_id,first_name,last_name,email,phone,date_of_birth,gender,address,city,state,zip_code,blood_group
+P001,John,Doe,john.doe@email.com,+1234567890,1990-01-15,Male,123 Main St,Anytown,State,12345,O+
+P002,Jane,Smith,jane.smith@email.com,+1234567891,1985-05-20,Female,456 Oak Ave,Somewhere,State,67890,A-`;
+
+            downloadFile('patient_template.csv', csvContent, 'text/csv');
+        } else if (format === 'fhir') {
+            // Create FHIR template
+            const fhirContent = JSON.stringify({
+                "resourceType": "Bundle",
+                "type": "collection",
+                "entry": [
+                    {
+                        "resource": {
+                            "resourceType": "Patient",
+                            "id": "patient-001",
+                            "name": [
+                                {
+                                    "use": "official",
+                                    "family": "Doe",
+                                    "given": ["John"]
+                                }
+                            ],
+                            "telecom": [
+                                {
+                                    "system": "phone",
+                                    "value": "+1234567890"
+                                },
+                                {
+                                    "system": "email",
+                                    "value": "john.doe@email.com"
+                                }
+                            ],
+                            "gender": "male",
+                            "birthDate": "1990-01-15"
+                        }
+                    }
+                ]
+            }, null, 2);
+
+            downloadFile('patient_template.json', fhirContent, 'application/json');
+        }
+    }
+
+    function downloadFile(filename, content, contentType) {
+        const blob = new Blob([content], { type: contentType });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }
+</script>
+{% endblock %}

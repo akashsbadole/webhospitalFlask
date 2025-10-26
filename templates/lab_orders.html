@@ -1,0 +1,722 @@
+{% extends "base.html" %} {% block title %}Lab Orders - {{ get_text('title')
+}}{% endblock %} {% block content %}
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2>
+        <i class="fas fa-clipboard-list text-primary"></i>
+        Lab Orders Management
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('patients') }}">Patients</a>
+          </li>
+          <li class="breadcrumb-item active">Lab Orders</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-md-4 text-end">
+      <div class="btn-group" role="group">
+        <button class="btn btn-primary" onclick="createNewOrder()">
+          <i class="fas fa-plus"></i> New Order
+        </button>
+        <button class="btn btn-success" onclick="processSelected()">
+          <i class="fas fa-check"></i> Process Selected
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Status Overview -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+          <h5>Pending</h5>
+          <h3 class="text-warning">{{ pending_orders|length }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <i class="fas fa-vial fa-2x text-info mb-2"></i>
+          <h5>Processing</h5>
+          <h3 class="text-info">{{ processing_orders|length }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+          <h5>Completed</h5>
+          <h3 class="text-success">{{ completed_orders|length }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+          <h5>Cancelled</h5>
+          <h3 class="text-danger">{{ cancelled_orders|length }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Filters -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-filter"></i> Filter Orders</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="statusFilter">
+                  <option value="">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label class="form-label">Date Range</label>
+                <select class="form-select" id="dateFilter">
+                  <option value="">All Dates</option>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label class="form-label">Patient</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="patientFilter"
+                  placeholder="Search patient..."
+                />
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary w-100" onclick="applyFilters()">
+                  <i class="fas fa-search"></i> Apply Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Orders List -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h5 class="mb-0"><i class="fas fa-list"></i> Lab Orders</h5>
+          <div>
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              onclick="exportOrders()"
+            >
+              <i class="fas fa-download"></i> Export
+            </button>
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              onclick="printOrders()"
+            >
+              <i class="fas fa-print"></i> Print
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      id="selectAll"
+                      onchange="toggleSelectAll()"
+                    />
+                  </th>
+                  <th>Order ID</th>
+                  <th>Patient</th>
+                  <th>Tests</th>
+                  <th>Order Date</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Amount</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for order in lab_orders %}
+                <tr>
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="form-check-input order-checkbox"
+                      data-order-id="{{ order.id }}"
+                    />
+                  </td>
+                  <td><code>{{ order.order_id }}</code></td>
+                  <td>
+                    <div>
+                      <strong
+                        >{{ order.patient.first_name }} {{
+                        order.patient.last_name }}</strong
+                      >
+                      <br />
+                      <small class="text-muted"
+                        >{{ order.patient.phone }}</small
+                      >
+                    </div>
+                  </td>
+                  <td>
+                    {% for test in order.tests %}
+                    <span class="badge bg-primary me-1">{{ test.name }}</span>
+                    {% endfor %}
+                  </td>
+                  <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td>
+                    <span
+                      class="badge bg-{{ 'warning' if order.status == 'pending' else 'info' if order.status == 'processing' else 'success' if order.status == 'completed' else 'danger' }}"
+                    >
+                      {{ order.status.title() }}
+                    </span>
+                  </td>
+                  <td>
+                    <span
+                      class="badge bg-{{ 'danger' if order.priority == 'high' else 'warning' if order.priority == 'medium' else 'secondary' }}"
+                    >
+                      {{ order.priority.title() }}
+                    </span>
+                  </td>
+                  <td>
+                    <strong>${{ "%.2f"|format(order.total_amount) }}</strong>
+                  </td>
+                  <td>
+                    <button
+                      class="btn btn-sm btn-outline-primary"
+                      onclick="viewOrderDetails({{ order.id }})"
+                    >
+                      <i class="fas fa-eye"></i> View
+                    </button>
+                    {% if order.status == 'pending' %}
+                    <button
+                      class="btn btn-sm btn-success"
+                      onclick="processOrder({{ order.id }})"
+                    >
+                      <i class="fas fa-play"></i> Process
+                    </button>
+                    {% endif %} {% if order.status == 'processing' %}
+                    <button
+                      class="btn btn-sm btn-info"
+                      onclick="updateProgress({{ order.id }})"
+                    >
+                      <i class="fas fa-sync"></i> Update
+                    </button>
+                    {% endif %}
+                    <button
+                      class="btn btn-sm btn-outline-secondary"
+                      onclick="generateInvoice({{ order.id }})"
+                    >
+                      <i class="fas fa-file-invoice"></i> Invoice
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Statistics -->
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Daily Orders</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="dailyOrdersChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Test Categories</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="testCategoriesChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Order Modal -->
+<div class="modal fade" id="newOrderModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-plus"></i> Create New Lab Order
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form id="newOrderForm">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Patient</label>
+                <select class="form-select" id="patientSelect" required>
+                  <option value="">Select Patient</option>
+                  {% for patient in patients %}
+                  <option value="{{ patient.id }}">
+                    {{ patient.first_name }} {{ patient.last_name }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Order Date</label>
+                <input
+                  type="datetime-local"
+                  class="form-control"
+                  id="orderDate"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Priority</label>
+                <select class="form-select" id="prioritySelect" required>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Doctor</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="doctorName"
+                  placeholder="Referring doctor"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Clinical Notes</label>
+            <textarea
+              class="form-control"
+              id="clinicalNotes"
+              rows="3"
+              placeholder="Clinical observations and notes..."
+            ></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Select Tests</label>
+            <div class="row" id="testSelection">
+              {% for test in available_tests %}
+              <div class="col-md-4 mb-2">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    value="{{ test.id }}"
+                    id="test{{ test.id }}"
+                  />
+                  <label class="form-check-label" for="test{{ test.id }}">
+                    {{ test.name }} - ${{ "%.2f"|format(test.price) }}
+                  </label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Special Instructions</label>
+            <textarea
+              class="form-control"
+              id="specialInstructions"
+              rows="2"
+              placeholder="Any special handling requirements..."
+            ></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" onclick="saveNewOrder()">
+          Create Order
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Order Details Modal -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-info-circle"></i> Order Details
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body" id="orderDetailsContent">
+        <!-- Content will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  let selectedOrders = [];
+
+  function createNewOrder() {
+    const modal = new bootstrap.Modal(document.getElementById("newOrderModal"));
+    modal.show();
+  }
+
+  function saveNewOrder() {
+    const patientId = document.getElementById("patientSelect").value;
+    const orderDate = document.getElementById("orderDate").value;
+    const priority = document.getElementById("prioritySelect").value;
+    const doctor = document.getElementById("doctorName").value;
+    const clinicalNotes = document.getElementById("clinicalNotes").value;
+    const specialInstructions = document.getElementById(
+      "specialInstructions"
+    ).value;
+
+    // Get selected tests
+    const selectedTests = [];
+    document
+      .querySelectorAll('#testSelection input[type="checkbox"]:checked')
+      .forEach((checkbox) => {
+        selectedTests.push(checkbox.value);
+      });
+
+    if (selectedTests.length === 0) {
+      Swal.fire({
+        title: "No Tests Selected",
+        text: "Please select at least one test.",
+        icon: "warning",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    const formData = {
+      patient_id: patientId,
+      order_date: orderDate,
+      priority: priority,
+      doctor: doctor,
+      clinical_notes: clinicalNotes,
+      special_instructions: specialInstructions,
+      tests: selectedTests,
+    };
+
+    // In a real application, this would save to database
+    console.log("Saving new order:", formData);
+
+    Swal.fire({
+      title: "Order Created",
+      text: "Lab order has been created successfully.",
+      icon: "success",
+      confirmButtonText: "OK",
+    }).then(() => {
+      bootstrap.Modal.getInstance(
+        document.getElementById("newOrderModal")
+      ).hide();
+      document.getElementById("newOrderForm").reset();
+    });
+  }
+
+  function viewOrderDetails(orderId) {
+    // In a real application, this would fetch order details
+    const orderDetails =
+      '<div class="row">' +
+      '<div class="col-md-6">' +
+      "<h4>Order Information</h4>" +
+      "<p><strong>Order ID:</strong> ORD-" +
+      orderId.toString().padStart(6, "0") +
+      "</p>" +
+      '<p><strong>Status:</strong> <span class="badge bg-warning">Processing</span></p>' +
+      '<p><strong>Priority:</strong> <span class="badge bg-danger">High</span></p>' +
+      "<p><strong>Created:</strong> 2024-01-15 10:30 AM</p>" +
+      "<p><strong>Estimated Completion:</strong> 2024-01-16 2:00 PM</p>" +
+      "</div>" +
+      '<div class="col-md-6">' +
+      "<h4>Patient Information</h4>" +
+      "<p><strong>Name:</strong> John Doe</p>" +
+      "<p><strong>Age:</strong> 45</p>" +
+      "<p><strong>Gender:</strong> Male</p>" +
+      "<p><strong>Phone:</strong> +1 234 567 8900</p>" +
+      "<p><strong>Email:</strong> john.doe@email.com</p>" +
+      "</div>" +
+      "</div>" +
+      "<hr>" +
+      "<h4>Ordered Tests</h4>" +
+      '<div class="row">' +
+      '<div class="col-md-6">' +
+      '<ul class="list-unstyled">' +
+      '<li><i class="fas fa-vial text-primary"></i> Complete Blood Count - $45.00</li>' +
+      '<li><i class="fas fa-vial text-primary"></i> Lipid Profile - $35.00</li>' +
+      '<li><i class="fas fa-vial text-primary"></i> Liver Function Test - $55.00</li>' +
+      "</ul>" +
+      "</div>" +
+      '<div class="col-md-6">' +
+      '<ul class="list-unstyled">' +
+      '<li><i class="fas fa-vial text-primary"></i> Kidney Function Test - $40.00</li>' +
+      '<li><i class="fas fa-vial text-primary"></i> Thyroid Panel - $60.00</li>' +
+      "</ul>" +
+      "</div>" +
+      "</div>" +
+      "<hr>" +
+      "<h4>Clinical Notes</h4>" +
+      "<p>Patient presents with symptoms of fatigue and mild abdominal discomfort. Routine blood work requested to assess overall health status.</p>" +
+      '<h4 class="mt-3">Special Instructions</h4>' +
+      "<p>Fasting required for 12 hours prior to blood draw. Morning appointment preferred.</p>";
+
+    document.getElementById("orderDetailsContent").innerHTML = orderDetails;
+    const modal = new bootstrap.Modal(
+      document.getElementById("orderDetailsModal")
+    );
+    modal.show();
+  }
+
+  function processOrder(orderId) {
+    Swal.fire({
+      title: "Process Order",
+      text: "Are you sure you want to start processing this order?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Process",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // In a real application, this would update order status
+        Swal.fire({
+          title: "Order Processed",
+          text: "Order has been moved to processing queue.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    });
+  }
+
+  function updateProgress(orderId) {
+    // In a real application, this would show progress update modal
+    Swal.fire({
+      title: "Update Progress",
+      text: "Order progress updated successfully.",
+      icon: "success",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  }
+
+  function generateInvoice(orderId) {
+    window.open(`/lab-orders/${orderId}/invoice`, "_blank");
+  }
+
+  function toggleSelectAll() {
+    const selectAll = document.getElementById("selectAll").checked;
+    document.querySelectorAll(".order-checkbox").forEach((checkbox) => {
+      checkbox.checked = selectAll;
+      if (selectAll) {
+        selectedOrders.push(checkbox.dataset.orderId);
+      } else {
+        selectedOrders = [];
+      }
+    });
+  }
+
+  function processSelected() {
+    if (selectedOrders.length === 0) {
+      Swal.fire({
+        title: "No Orders Selected",
+        text: "Please select orders to process.",
+        icon: "warning",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: "Process Selected Orders",
+      text: `Are you sure you want to process ${selectedOrders.length} order(s)?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Process",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // In a real application, this would process selected orders
+        Swal.fire({
+          title: "Orders Processed",
+          text: `${selectedOrders.length} order(s) have been processed successfully.`,
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        selectedOrders = [];
+        document.getElementById("selectAll").checked = false;
+      }
+    });
+  }
+
+  function applyFilters() {
+    const status = document.getElementById("statusFilter").value;
+    const dateRange = document.getElementById("dateFilter").value;
+    const patient = document.getElementById("patientFilter").value;
+
+    // In a real application, this would filter the orders
+    console.log("Applying filters:", { status, dateRange, patient });
+
+    Swal.fire({
+      title: "Filtering Orders",
+      text: "Please wait...",
+      icon: "info",
+      showConfirmButton: false,
+      timer: 1000,
+    });
+  }
+
+  function exportOrders() {
+    window.open("/lab-orders/export", "_blank");
+  }
+
+  function printOrders() {
+    window.print();
+  }
+
+  // Initialize charts
+  document.addEventListener("DOMContentLoaded", function () {
+    // Daily Orders Chart
+    const dailyCtx = document
+      .getElementById("dailyOrdersChart")
+      .getContext("2d");
+    new Chart(dailyCtx, {
+      type: "line",
+      data: {
+        labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        datasets: [
+          {
+            label: "Orders",
+            data: [12, 19, 15, 25, 22, 18, 14],
+            borderColor: "rgb(75, 192, 192)",
+            tension: 0.1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+        },
+      },
+    });
+
+    // Test Categories Chart
+    const categoriesCtx = document
+      .getElementById("testCategoriesChart")
+      .getContext("2d");
+    new Chart(categoriesCtx, {
+      type: "doughnut",
+      data: {
+        labels: ["Blood Tests", "Urine Tests", "Imaging", "Molecular"],
+        datasets: [
+          {
+            data: [45, 25, 20, 10],
+            backgroundColor: [
+              "rgba(255, 99, 132, 0.8)",
+              "rgba(54, 162, 235, 0.8)",
+              "rgba(255, 205, 86, 0.8)",
+              "rgba(75, 192, 192, 0.8)",
+            ],
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+      },
+    });
+  });
+</script>
+
+<style>
+  .order-checkbox {
+    cursor: pointer;
+  }
+
+  .badge {
+    font-size: 0.75rem;
+  }
+
+  .table th {
+    background-color: #f8f9fa;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,234 @@
+{% extends "base.html" %} {% block title %}Lab Results - {{ get_text('title')
+}}{% endblock %} {% block content %}
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2>
+        <i class="fas fa-vial text-primary"></i>
+        My Lab Results
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('patient_portal') }}">Patient Portal</a>
+          </li>
+          <li class="breadcrumb-item active">Lab Results</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-md-4 text-end">
+      <button class="btn btn-primary" onclick="exportResults()">
+        <i class="fas fa-download"></i> Export Results
+      </button>
+    </div>
+  </div>
+
+  <!-- Results Summary -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <i class="fas fa-file-medical fa-2x text-primary mb-2"></i>
+          <h5>Total Results</h5>
+          <h3 class="text-primary">{{ reports|length }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+          <h5>Normal Results</h5>
+          <h3 class="text-success">
+            {{ reports|selectattr('is_normal')|list|length }}
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+          <h5>Abnormal Results</h5>
+          <h3 class="text-warning">
+            {{ reports|rejectattr('is_normal')|list|length }}
+          </h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <i class="fas fa-clock fa-2x text-info mb-2"></i>
+          <h5>This Month</h5>
+          <h3 class="text-info">
+            {{ reports|selectattr('completed_at', '>=',
+            datetime.utcnow().replace(day=1))|list|length }}
+          </h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Table -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h5 class="mb-0"><i class="fas fa-list"></i> Recent Results</h5>
+          <div>
+            <button
+              class="btn btn-sm btn-outline-primary"
+              onclick="refreshResults()"
+            >
+              <i class="fas fa-sync"></i> Refresh
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Report ID</th>
+                  <th>Test Name</th>
+                  <th>Result</th>
+                  <th>Normal Range</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for report in reports %}
+                <tr>
+                  <td><code>{{ report.report_id }}</code></td>
+                  <td>{{ report.test.name }}</td>
+                  <td>
+                    <strong
+                      >{{ report.result_value }} {{ report.unit or '' }}</strong
+                    >
+                  </td>
+                  <td>{{ report.normal_range or 'N/A' }}</td>
+                  <td>
+                    <span
+                      class="badge bg-{{ 'success' if report.is_normal else 'danger' }}"
+                    >
+                      {{ 'Normal' if report.is_normal else 'Abnormal' }}
+                    </span>
+                  </td>
+                  <td>{{ report.completed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td>
+                    <button
+                      class="btn btn-sm btn-outline-primary"
+                      onclick="viewDetails({{ report.id }})"
+                    >
+                      <i class="fas fa-eye"></i> View
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Results Details Modal -->
+<div class="modal fade" id="resultsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-vial"></i> Test Results Details
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body" id="resultsContent">
+        <!-- Results details will be loaded here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+        <button type="button" class="btn btn-primary" onclick="downloadPDF()">
+          <i class="fas fa-download"></i> Download PDF
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function viewDetails(reportId) {
+    // In a real application, this would fetch report details
+    const reportDetails =
+      '<div class="row">' +
+      '<div class="col-md-6">' +
+      "<h4>Test Information</h4>" +
+      "<p><strong>Test Name:</strong> Complete Blood Count (CBC)</p>" +
+      "<p><strong>Test Code:</strong> CBC</p>" +
+      "<p><strong>Category:</strong> Blood Tests</p>" +
+      "<p><strong>Price:</strong> $25.00</p>" +
+      "<p><strong>Turnaround Time:</strong> 24 hours</p>" +
+      "</div>" +
+      '<div class="col-md-6">' +
+      "<h4>Result Information</h4>" +
+      "<p><strong>Report ID:</strong> RPT20240115093000</p>" +
+      "<p><strong>Result:</strong> 5.2 million/μL</p>" +
+      "<p><strong>Unit:</strong> million/μL</p>" +
+      "<p><strong>Normal Range:</strong> 4.5-5.9 million/μL</p>" +
+      '<p><strong>Status:</strong> <span class="badge bg-success">Normal</span></p>' +
+      "</div>" +
+      "</div>" +
+      "<hr>" +
+      "<h4>Interpretation</h4>" +
+      "<p>Your red blood cell count is within the normal range. This indicates that your body is producing an adequate number of red blood cells to carry oxygen throughout your body.</p>" +
+      "<hr>" +
+      "<h4>Sample Requirements</h4>" +
+      "<p>5 mL whole blood in EDTA tube. Fasting not required.</p>" +
+      "<hr>" +
+      "<h4>Preparation Instructions</h4>" +
+      "<p>No special preparation is required for this test.</p>";
+
+    document.getElementById("resultsContent").innerHTML = reportDetails;
+    const modal = new bootstrap.Modal(document.getElementById("resultsModal"));
+    modal.show();
+  }
+
+  function downloadPDF() {
+    // In a real application, this would generate and download a PDF
+    Swal.fire({
+      title: "Downloading",
+      text: "Generating PDF report...",
+      icon: "info",
+      showConfirmButton: false,
+      timer: 2000,
+    });
+  }
+
+  function exportResults() {
+    window.open("/patient/lab-results/export", "_blank");
+  }
+
+  function refreshResults() {
+    Swal.fire({
+      title: "Refreshing",
+      text: "Please wait...",
+      icon: "info",
+      showConfirmButton: false,
+      timer: 1000,
+    });
+  }
+</script>
+{% endblock %}

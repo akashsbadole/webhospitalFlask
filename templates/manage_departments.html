@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Departments{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-building text-primary"></i> Department Management</h4>
+                    <button class="btn btn-primary" hx-get="/admin/department/add" hx-target="#modal-content"
+                        data-bs-toggle="modal" data-bs-target="#dynamicModal">
+                        <i class="fas fa-plus"></i> Add Department
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="departments-list">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Department Code</th>
+                                        <th>Name</th>
+                                        <th>Head of Department</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for department in departments %}
+                                    <tr>
+                                        <td><span class="badge bg-primary">{{ department.code }}</span></td>
+                                        <td>
+                                            <strong>{{ department.name }}</strong>
+                                            {% if department.description %}
+                                            <br><small class="text-muted">{{ department.description }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if department.hod %}
+                                            <i class="fas fa-user-tie text-success"></i> {{ department.hod.full_name }}
+                                            {% else %}
+                                            <span class="text-muted">Not assigned</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span
+                                                class="badge bg-{{ 'success' if department.is_active else 'danger' }}">
+                                                {{ 'Active' if department.is_active else 'Inactive' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-info"
+                                                    hx-get="/admin/department/{{ department.id }}/view"
+                                                    hx-target="#modal-content" data-bs-toggle="modal"
+                                                    data-bs-target="#dynamicModal">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-outline-warning"
+                                                    hx-get="/admin/department/{{ department.id }}/edit"
+                                                    hx-target="#modal-content" data-bs-toggle="modal"
+                                                    data-bs-target="#dynamicModal">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button
+                                                    class="btn btn-outline-{{ 'danger' if department.is_active else 'success' }}"
+                                                    hx-post="/admin/department/{{ department.id }}/toggle"
+                                                    hx-target="#departments-list" hx-confirm="Are you sure?">
+                                                    <i
+                                                        class="fas fa-{{ 'ban' if department.is_active else 'check' }}"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie"></i> Department Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h3 class="text-primary">{{ departments|length }}</h3>
+                            <small>Total Departments</small>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-success">{{ departments|selectattr('is_active')|list|length }}</h3>
+                            <small>Active</small>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h6>Department List</h6>
+                    <div class="list-group list-group-flush">
+                        {% for dept in departments[:5] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ dept.name }}</span>
+                            <span class="badge bg-primary">{{ dept.code }}</span>
+                        </div>
+                        {% endfor %}
+                        {% if departments|length > 5 %}
+                        <div class="list-group-item text-center text-muted">
+                            <small>... and {{ departments|length - 5 }} more</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" hx-get="/admin/department/add"
+                            hx-target="#modal-content" data-bs-toggle="modal" data-bs-target="#dynamicModal">
+                            <i class="fas fa-plus"></i> Add New Department
+                        </button>
+                        <button class="btn btn-outline-info" hx-get="/admin/departments/export" hx-trigger="click">
+                            <i class="fas fa-download"></i> Export List
+                        </button>
+                        <button class="btn btn-outline-success" hx-get="/admin/departments/report"
+                            hx-target="#modal-content" data-bs-toggle="modal" data-bs-target="#dynamicModal">
+                            <i class="fas fa-chart-bar"></i> Generate Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dynamic Modal -->
+<div class="modal fade" id="dynamicModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modal-content">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}

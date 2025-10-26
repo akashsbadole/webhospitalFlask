@@ -1,0 +1,189 @@
+{% extends "base.html" %} {% block title %}Login - {{ get_text('title') }}{%
+endblock %} {% block content %}
+<div class="container-fluid h-100">
+  <div class="row min-vh-100">
+    <!-- Left Side - Branding -->
+    <div
+      class="col-lg-6 d-none d-lg-flex align-items-center justify-content-center"
+      style="background: linear-gradient(135deg, var(--primary-color), #1f5f7a)"
+    >
+      <div class="text-center text-white">
+        {% if settings.hospital_logo %}
+        <img
+          src="{{ settings.hospital_logo }}"
+          alt="Hospital Logo"
+          style="height: 8rem; margin-bottom: 2rem"
+        />
+        {% else %}
+        <i
+          class="fas fa-hospital-alt"
+          style="font-size: 8rem; margin-bottom: 2rem"
+        ></i>
+        {% endif %}
+        <h1 class="display-4 fw-bold mb-4">
+          {{ settings.hospital_name or 'MediCare Pro' }}
+        </h1>
+        <h3 class="mb-4">
+          {{ settings.hospital_tagline or 'Hospital Management System' }}
+        </h3>
+        <div class="row text-start">
+          <div class="col-12 loginFeatures">
+            <div class="d-flex align-items-center mb-3">
+              <i class="fas fa-check-circle fa-lg me-3"></i>
+              <span class="fs-5">Patient Management</span>
+            </div>
+            <div class="d-flex align-items-center mb-3">
+              <i class="fas fa-check-circle fa-lg me-3"></i>
+              <span class="fs-5">Appointment Scheduling</span>
+            </div>
+            <div class="d-flex align-items-center mb-3">
+              <i class="fas fa-check-circle fa-lg me-3"></i>
+              <span class="fs-5">Telemedicine Support</span>
+            </div>
+            <div class="d-flex align-items-center mb-3">
+              <i class="fas fa-check-circle fa-lg me-3"></i>
+              <span class="fs-5">Staff Attendance</span>
+            </div>
+            <div class="d-flex align-items-center mb-3">
+              <i class="fas fa-check-circle fa-lg me-3"></i>
+              <span class="fs-5">Multi-language Support</span>
+            </div>
+            <div class="d-flex align-items-center mb-3">
+              <i class="fas fa-check-circle fa-lg me-3"></i>
+              <span class="fs-5">Offline Sync Capability</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side - Login Form -->
+    <div class="col-lg-6 d-flex align-items-center justify-content-center">
+      <div class="w-100" style="max-width: 400px">
+        <div class="card shadow-lg border-0">
+          <div class="card-header text-center">
+            {% if settings.login_hero_image %}
+            <img
+              src="{{ settings.login_hero_image }}"
+              alt="Login Hero"
+              class="img-fluid mb-3"
+              style="max-height: 120px"
+            />
+            {% endif %}
+            <h2 class="mb-0">
+              <i class="fas fa-sign-in-alt text-primary"></i>
+              {{ settings.login_welcome_text or 'Welcome Back!' }}
+            </h2>
+            <p class="text-muted mt-2">Sign in to your account</p>
+          </div>
+          <div class="card-body p-4">
+            <form method="POST">
+              <div class="mb-3">
+                <label class="form-label">
+                  <i class="fas fa-user text-primary"></i> Username
+                </label>
+                <input
+                  type="text"
+                  class="form-control form-control-lg"
+                  name="username"
+                  value="admin"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">
+                  <i class="fas fa-lock text-primary"></i> Password
+                </label>
+                <input
+                  type="password"
+                  class="form-control form-control-lg"
+                  name="password"
+                  value="admin123"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">
+                  <i class="fas fa-globe text-primary"></i> Language
+                </label>
+                <select class="form-select form-select-lg" name="language">
+                  <option value="en">English</option>
+                  <option value="hi">हिंदी (Hindi)</option>
+                </select>
+              </div>
+
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="fas fa-sign-in-alt"></i> {{ get_text('login') }}
+                </button>
+              </div>
+            </form>
+
+            <hr class="my-4" />
+
+            <div class="text-center">
+              <h6 class="text-muted">Demo Credentials:</h6>
+              <div class="row g-2">
+                <div class="col-6">
+                  <div class="card bg-light">
+                    <div class="card-body p-2">
+                      <small class="fw-bold">Admin</small><br />
+                      <small>admin / admin123</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="card bg-light">
+                    <div class="card-body p-2">
+                      <small class="fw-bold">Doctor</small><br />
+                      <small>doctor / doctor123</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center mt-4">
+          <p class="text-muted">
+            Don't have an account?
+            <a href="#" class="text-primary text-decoration-none"
+              >Contact Administrator</a
+            >
+          </p>
+
+          {% if settings.login_help_links %}
+          <div class="mt-3">
+            <p class="text-muted small">Need Help?</p>
+            {{ settings.login_help_links | safe }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .min-vh-100 {
+    min-height: 100vh;
+  }
+
+  .card {
+    border-radius: 20px;
+  }
+
+  .card-header {
+    border-radius: 20px 20px 0 0 !important;
+  }
+
+  @media (max-width: 991px) {
+    .container-fluid {
+      padding: 2rem 1rem;
+    }
+  }
+</style>
+{% endblock %}

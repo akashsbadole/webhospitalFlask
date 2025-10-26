@@ -1,0 +1,288 @@
+{% extends "base.html" %} {% block title %}Medical Records - {{
+get_text('title') }}{% endblock %} {% block content %}
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2>
+        <i class="fas fa-file-medical text-primary"></i>
+        Medical Records
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('patient_portal') }}">Patient Portal</a>
+          </li>
+          <li class="breadcrumb-item active">Medical Records</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-md-4 text-end">
+      <button class="btn btn-primary" onclick="exportRecords()">
+        <i class="fas fa-download"></i> Export Records
+      </button>
+    </div>
+  </div>
+
+  <!-- Patient Info Card -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <div class="text-center">
+                <img
+                  src="https://ui-avatars.com/api/?name={{ patient.first_name }}+{{ patient.last_name }}&background=007bff&color=fff&size=100"
+                  class="rounded-circle mb-3"
+                  alt="Patient Avatar"
+                  width="100"
+                  height="100"
+                />
+                <h5>{{ patient.first_name }} {{ patient.last_name }}</h5>
+                <p class="text-muted">Patient ID: {{ patient.patient_id }}</p>
+              </div>
+            </div>
+            <div class="col-md-9">
+              <div class="row">
+                <div class="col-md-6">
+                  <p>
+                    <strong>Date of Birth:</strong> {{
+                    patient.date_of_birth.strftime('%Y-%m-%d') }}
+                  </p>
+                  <p><strong>Age:</strong> {{ patient.age }} years</p>
+                  <p><strong>Gender:</strong> {{ patient.gender.title() }}</p>
+                  <p>
+                    <strong>Blood Type:</strong> {{ patient.blood_type or 'Not
+                    specified' }}
+                  </p>
+                </div>
+                <div class="col-md-6">
+                  <p><strong>Phone:</strong> {{ patient.phone }}</p>
+                  <p>
+                    <strong>Email:</strong> {{ patient.email or 'Not specified'
+                    }}
+                  </p>
+                  <p>
+                    <strong>Address:</strong> {{ patient.address }}, {{
+                    patient.city }}, {{ patient.state }} {{ patient.zip_code }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Medical Records Timeline -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-history"></i> Medical History Timeline
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="timeline">
+            {% for order in orders %}
+            <div class="timeline-item">
+              <div
+                class="timeline-point bg-{{ 'primary' if order.status == 'completed' else 'warning' if order.status == 'in_progress' else 'secondary' }}"
+              ></div>
+              <div class="timeline-content">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h6>Order #{{ order.order_id }}</h6>
+                  <small class="text-muted"
+                    >{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</small
+                  >
+                </div>
+                <p class="mb-2">
+                  <strong>Doctor:</strong> {{ order.doctor_name }}<br />
+                  <strong>Status:</strong>
+                  <span
+                    class="badge bg-{{ 'success' if order.status == 'completed' else 'warning' if order.status == 'in_progress' else 'secondary' }}"
+                  >
+                    {{ order.status.title() }}
+                  </span>
+                </p>
+                <p class="mb-2">
+                  <strong>Tests:</strong>
+                  {% set test_names = [] %} {% for test_id in
+                  order.test_ids|fromjson %} {% set _ =
+                  test_names.append(LabTest.query.get(test_id).name) %} {%
+                  endfor %} {{ test_names|join(', ') }}
+                </p>
+                {% if order.clinical_notes %}
+                <p class="mb-2">
+                  <strong>Clinical Notes:</strong> {{ order.clinical_notes }}
+                </p>
+                {% endif %} {% if order.status == 'completed' %}
+                <button
+                  class="btn btn-sm btn-outline-primary"
+                  onclick="viewResults({{ order.id }})"
+                >
+                  <i class="fas fa-eye"></i> View Results
+                </button>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Results Modal -->
+  <div class="modal fade" id="resultsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-vial"></i> Test Results</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+          ></button>
+        </div>
+        <div class="modal-body" id="resultsContent">
+          <!-- Results will be loaded here -->
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="downloadResults()"
+          >
+            <i class="fas fa-download"></i> Download PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function viewResults(orderId) {
+    // In a real application, this would fetch test results
+    const resultsContent =
+      '<div class="row">' +
+      '<div class="col-md-12">' +
+      "<h4>Test Results Summary</h4>" +
+      '<div class="table-responsive">' +
+      '<table class="table table-striped">' +
+      "<thead>" +
+      "<tr>" +
+      "<th>Test Name</th>" +
+      "<th>Result</th>" +
+      "<th>Normal Range</th>" +
+      "<th>Status</th>" +
+      "<th>Date</th>" +
+      "</tr>" +
+      "</thead>" +
+      "<tbody>" +
+      "<tr>" +
+      "<td>Complete Blood Count (CBC)</td>" +
+      "<td>Normal</td>" +
+      "<td>Reference range</td>" +
+      '<td><span class="badge bg-success">Normal</span></td>' +
+      "<td>2024-01-15</td>" +
+      "</tr>" +
+      "<tr>" +
+      "<td>Lipid Profile</td>" +
+      "<td>High Cholesterol</td>" +
+      "<td>Reference range</td>" +
+      '<td><span class="badge bg-warning">Abnormal</span></td>' +
+      "<td>2024-01-15</td>" +
+      "</tr>" +
+      "</tbody>" +
+      "</table>" +
+      "</div>" +
+      "</div>" +
+      "</div>" +
+      '<div class="row mt-3">' +
+      '<div class="col-md-12">' +
+      "<h5>Doctor's Comments</h5>" +
+      "<p>Patient shows elevated cholesterol levels. Recommended dietary changes and follow-up in 3 months.</p>" +
+      "</div>" +
+      "</div>";
+
+    document.getElementById("resultsContent").innerHTML = resultsContent;
+    const modal = new bootstrap.Modal(document.getElementById("resultsModal"));
+    modal.show();
+  }
+
+  function downloadResults() {
+    // In a real application, this would generate and download a PDF
+    Swal.fire({
+      title: "Downloading",
+      text: "Generating PDF report...",
+      icon: "info",
+      showConfirmButton: false,
+      timer: 2000,
+    });
+  }
+
+  function exportRecords() {
+    window.open("/patient/medical-records/export", "_blank");
+  }
+</script>
+
+<style>
+  .timeline {
+    position: relative;
+    padding: 20px 0;
+  }
+
+  .timeline-item {
+    position: relative;
+    padding-left: 40px;
+    margin-bottom: 30px;
+  }
+
+  .timeline-point {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .timeline-content {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 3px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .timeline-item:nth-child(odd) .timeline-content {
+    border-left-color: #007bff;
+  }
+
+  .timeline-item:nth-child(even) .timeline-content {
+    border-left-color: #28a745;
+  }
+
+  .timeline-item:nth-child(3n) .timeline-content {
+    border-left-color: #ffc107;
+  }
+
+  .timeline-item:nth-child(4n) .timeline-content {
+    border-left-color: #17a2b8;
+  }
+</style>
+{% endblock %}

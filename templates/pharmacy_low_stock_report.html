@@ -1,0 +1,167 @@
+{% extends "base.html" %} {% block title %}Low Stock Report{% endblock %} {%
+block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h4>
+            <i class="fas fa-exclamation-triangle text-warning"></i> Low Stock
+            Medicines Report
+          </h4>
+          <div class="btn-group">
+            <button class="btn btn-success" onclick="window.print()">
+              <i class="fas fa-print"></i> Print Report
+            </button>
+            <button class="btn btn-info" onclick="exportToExcel()">
+              <i class="fas fa-file-excel"></i> Export Excel
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <p>
+                <strong>Report Generated:</strong> {{
+                datetime.now().strftime('%Y-%m-%d %H:%M:%S') }}
+              </p>
+              <p>
+                <strong>Total Low Stock Items:</strong> {{ medicines|length }}
+              </p>
+            </div>
+            <div class="col-md-6 text-end">
+              <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Action Required:</strong> {{ medicines|length }}
+                medicines need restocking
+              </div>
+            </div>
+          </div>
+
+          {% if medicines %}
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Medicine Name</th>
+                  <th>Generic Name</th>
+                  <th>Category</th>
+                  <th>Current Stock</th>
+                  <th>Min Level</th>
+                  <th>Shortage</th>
+                  <th>Unit Price</th>
+                  <th>Reorder Value</th>
+                  <th>Priority</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for medicine in medicines %} {% set shortage =
+                medicine.min_stock_level - medicine.stock_quantity %} {% set
+                reorder_qty = shortage + (medicine.min_stock_level * 0.5)|int %}
+                {% set reorder_value = reorder_qty * medicine.purchase_price %}
+                <tr
+                  class="{{ 'table-danger' if medicine.stock_quantity == 0 else 'table-warning' }}"
+                >
+                  <td>
+                    <strong>{{ medicine.name }}</strong>
+                    <br /><small class="text-muted"
+                      >{{ medicine.strength }}</small
+                    >
+                  </td>
+                  <td>{{ medicine.generic_name }}</td>
+                  <td>
+                    <span class="badge bg-secondary"
+                      >{{ medicine.category }}</span
+                    >
+                  </td>
+                  <td>
+                    <span
+                      class="badge bg-{{ 'danger' if medicine.stock_quantity == 0 else 'warning' }}"
+                    >
+                      {{ medicine.stock_quantity }}
+                    </span>
+                  </td>
+                  <td>{{ medicine.min_stock_level }}</td>
+                  <td class="text-danger">{{ shortage }}</td>
+                  <td>${{ "%.2f"|format(medicine.purchase_price) }}</td>
+                  <td class="text-success">
+                    ${{ "%.2f"|format(reorder_value) }}
+                  </td>
+                  <td>
+                    {% if medicine.stock_quantity == 0 %}
+                    <span class="badge bg-danger">Critical</span>
+                    {% else %}
+                    <span class="badge bg-warning">Low</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr class="table-info">
+                  <th colspan="7">Total Reorder Value:</th>
+                  <th>
+                    ${{ "%.2f"|format(medicines|sum(attribute='purchase_price')
+                    * 50) }}
+                  </th>
+                  <th></th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5">
+            <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+            <h4 class="text-success">All medicines are adequately stocked!</h4>
+            <p class="text-muted">
+              No medicines are currently below minimum stock levels.
+            </p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function exportToExcel() {
+      // Create CSV content (simplified Excel format)
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Medicine Name,Generic Name,Category,Current Stock,Min Level,Shortage,Unit Price,Reorder Value,Priority\n";
+
+      // Add medicines data
+      {% for medicine in medicines %}
+      {% set shortage = medicine.min_stock_level - medicine.stock_quantity %}
+      {% set reorder_qty = shortage + (medicine.min_stock_level * 0.5)|int %}
+      {% set reorder_value = reorder_qty * medicine.purchase_price %}
+      csvContent += `"{{ medicine.name }}","{{ medicine.generic_name }}","{{ medicine.category }}",{{ medicine.stock_quantity }},{{ medicine.min_stock_level }},{{ shortage }},${{ "%.2f"|format(medicine.purchase_price) }},${{ "%.2f"|format(reorder_value) }}","{{ 'Critical' if medicine.stock_quantity == 0 else 'Low' }}"\n`;
+      {% endfor %}
+
+      // Create download link
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "pharmacy_low_stock_report_{{ datetime.now().strftime('%Y%m%d_%H%M%S') }}.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  }
+</script>
+
+<style>
+  @media print {
+    .btn-group,
+    .card-header .btn-group {
+      display: none !important;
+    }
+
+    .card {
+      border: none !important;
+      box-shadow: none !important;
+    }
+  }
+</style>
+{% endblock %}

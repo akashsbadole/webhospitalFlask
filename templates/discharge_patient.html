@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Discharge Patient{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Patient Discharge</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Admission Information</h6>
+                            <p><strong>Admission ID:</strong> {{ admission.id }}</p>
+                            <p><strong>Patient:</strong> {{ admission.patient.first_name }} {{
+                                admission.patient.last_name }}</p>
+                            <p><strong>Patient ID:</strong> {{ admission.patient.patient_id }}</p>
+                            <p><strong>Admission Date:</strong> {{ admission.admission_date.strftime('%Y-%m-%d %H:%M')
+                                }}</p>
+                            <p><strong>Admission Type:</strong> {{ admission.admission_type.title() }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Current Status</h6>
+                            <p><strong>Ward:</strong> {{ admission.bed.ward.name }}</p>
+                            <p><strong>Bed:</strong> {{ admission.bed.bed_number }}</p>
+                            <p><strong>Attending Doctor:</strong> {{ admission.doctor.full_name }}</p>
+                            <p><strong>Reason for Admission:</strong> {{ admission.reason }}</p>
+                            <p><strong>Current Diagnosis:</strong> {{ admission.diagnosis or 'Not specified' }}</p>
+                        </div>
+                    </div>
+
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="discharge_summary" class="form-label">Discharge Summary *</label>
+                                    <textarea class="form-control" id="discharge_summary" name="discharge_summary"
+                                        rows="8" required placeholder="Enter detailed discharge summary including:
+- Final diagnosis
+- Treatment provided
+- Medications prescribed
+- Follow-up instructions
+- Restrictions/precautions
+- Next appointment details"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="total_charges" class="form-label">Total Charges</label>
+                                    <input type="number" class="form-control" id="total_charges" name="total_charges"
+                                        step="0.01" placeholder="0.00">
+                                    <small class="form-text text-muted">Leave blank if billing will be handled
+                                        separately</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="discharge_condition" class="form-label">Discharge Condition</label>
+                                    <select class="form-select" id="discharge_condition" name="discharge_condition">
+                                        <option value="improved">Improved</option>
+                                        <option value="stable">Stable</option>
+                                        <option value="recovered">Recovered</option>
+                                        <option value="transferred">Transferred</option>
+                                        <option value="against_medical_advice">Against Medical Advice</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <strong>Important:</strong> Discharging this patient will:
+                                    <ul class="mb-0 mt-2">
+                                        <li>Free up bed {{ admission.bed.bed_number }} in {{ admission.bed.ward.name }}
+                                        </li>
+                                        <li>Update ward availability</li>
+                                        <li>Generate discharge documentation</li>
+                                        <li>Close the admission record</li>
+                                    </ul>
+                                </div>
+
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-sign-out-alt"></i> Discharge Patient
+                                </button>
+                                <a href="{{ url_for('admissions') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Patient Details</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Full Name:</strong> {{ admission.patient.first_name }} {{ admission.patient.last_name }}
+                    </p>
+                    <p><strong>Age:</strong>
+                        {% if admission.patient.date_of_birth %}
+                        {{ (admission.admission_date.date() - admission.patient.date_of_birth).days // 365 }} years
+                        {% else %}
+                        Not specified
+                        {% endif %}
+                    </p>
+                    <p><strong>Gender:</strong> {{ admission.patient.gender or 'Not specified' }}</p>
+                    <p><strong>Blood Group:</strong> {{ admission.patient.blood_group or 'Not specified' }}</p>
+                    <p><strong>Phone:</strong> {{ admission.patient.phone }}</p>
+                    <p><strong>Emergency Contact:</strong> {{ admission.patient.emergency_contact or 'Not specified' }}
+                    </p>
+                    <p><strong>Allergies:</strong> {{ admission.patient.allergies or 'None known' }}</p>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Length of Stay</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Admission Date:</strong> {{ admission.admission_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <p><strong>Current Date:</strong> {{ moment().strftime('%Y-%m-%d %H:%M') }}</p>
+                    <p><strong>Length of Stay:</strong>
+                        {% set los = (moment() - admission.admission_date).days %}
+                        {{ los }} day{{ 's' if los != 1 else '' }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Discharge Checklist</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="check1">
+                        <label class="form-check-label" for="check1">
+                            Medical clearance obtained
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="check2">
+                        <label class="form-check-label" for="check2">
+                            Discharge medications prepared
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="check3">
+                        <label class="form-check-label" for="check3">
+                            Follow-up appointments scheduled
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="check4">
+                        <label class="form-check-label" for="check4">
+                            Patient/family education completed
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="check5">
+                        <label class="form-check-label" for="check5">
+                            Billing/insurance cleared
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-calculate length of stay
+    document.addEventListener('DOMContentLoaded', function () {
+        const admissionDate = new Date('{{ admission.admission_date.isoformat() }}');
+        const currentDate = new Date();
+        const diffTime = Math.abs(currentDate - admissionDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        // Update length of stay display if needed
+        console.log('Length of stay:', diffDays, 'days');
+    });
+</script>
+{% endblock %}

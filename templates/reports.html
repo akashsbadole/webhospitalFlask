@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Analytics{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Dashboard Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ today_patients }}</h4>
+                            <p>New Patients Today</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-plus fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ today_appointments }}</h4>
+                            <p>Appointments Today</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calendar-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>${{ "%.2f"|format(today_revenue) }}</h4>
+                            <p>Revenue Today</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-dollar-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ "%.1f"|format(occupancy_rate) }}%</h4>
+                            <p>Bed Occupancy</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-bed fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Categories -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Generate Reports</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Patient Reports -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h5><i class="fas fa-users"></i> Patient Reports</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li><a href="#" onclick="generateReport('patient_registration')"><i
+                                                    class="fas fa-chart-line"></i> Patient Registration Report</a></li>
+                                        <li><a href="#" onclick="generateReport('patient_demographics')"><i
+                                                    class="fas fa-chart-pie"></i> Demographics Analysis</a></li>
+                                        <li><a href="#" onclick="generateReport('patient_visits')"><i
+                                                    class="fas fa-chart-bar"></i> Visit Frequency Report</a></li>
+                                        <li><a href="#" onclick="generateReport('patient_history')"><i
+                                                    class="fas fa-history"></i> Medical History Summary</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Financial Reports -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h5><i class="fas fa-dollar-sign"></i> Financial Reports</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li><a href="#" onclick="generateReport('revenue_summary')"><i
+                                                    class="fas fa-money-bill-wave"></i> Revenue Summary</a></li>
+                                        <li><a href="#" onclick="generateReport('payment_collection')"><i
+                                                    class="fas fa-hand-holding-usd"></i> Payment Collection</a></li>
+                                        <li><a href="#" onclick="generateReport('outstanding_bills')"><i
+                                                    class="fas fa-exclamation-triangle"></i> Outstanding Bills</a></li>
+                                        <li><a href="#" onclick="generateReport('insurance_claims')"><i
+                                                    class="fas fa-shield-alt"></i> Insurance Claims</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Clinical Reports -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-info text-white">
+                                    <h5><i class="fas fa-stethoscope"></i> Clinical Reports</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li><a href="#" onclick="generateReport('lab_turnaround')"><i
+                                                    class="fas fa-flask"></i> Lab Turnaround Times</a></li>
+                                        <li><a href="#" onclick="generateReport('imaging_utilization')"><i
+                                                    class="fas fa-x-ray"></i> Imaging Utilization</a></li>
+                                        <li><a href="#" onclick="generateReport('prescription_analysis')"><i
+                                                    class="fas fa-pills"></i> Prescription Analysis</a></li>
+                                        <li><a href="#" onclick="generateReport('diagnosis_trends')"><i
+                                                    class="fas fa-chart-area"></i> Diagnosis Trends</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Operational Reports -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-warning text-white">
+                                    <h5><i class="fas fa-cogs"></i> Operational Reports</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li><a href="#" onclick="generateReport('bed_occupancy')"><i
+                                                    class="fas fa-bed"></i> Bed Occupancy Report</a></li>
+                                        <li><a href="#" onclick="generateReport('staff_performance')"><i
+                                                    class="fas fa-user-tie"></i> Staff Performance</a></li>
+                                        <li><a href="#" onclick="generateReport('appointment_analysis')"><i
+                                                    class="fas fa-calendar-alt"></i> Appointment Analysis</a></li>
+                                        <li><a href="#" onclick="generateReport('resource_utilization')"><i
+                                                    class="fas fa-chart-line"></i> Resource Utilization</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quality Reports -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-danger text-white">
+                                    <h5><i class="fas fa-award"></i> Quality Reports</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li><a href="#" onclick="generateReport('patient_satisfaction')"><i
+                                                    class="fas fa-smile"></i> Patient Satisfaction</a></li>
+                                        <li><a href="#" onclick="generateReport('readmission_rates')"><i
+                                                    class="fas fa-redo"></i> Readmission Rates</a></li>
+                                        <li><a href="#" onclick="generateReport('infection_control')"><i
+                                                    class="fas fa-virus-slash"></i> Infection Control</a></li>
+                                        <li><a href="#" onclick="generateReport('quality_metrics')"><i
+                                                    class="fas fa-star"></i> Quality Metrics</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Inventory Reports -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-secondary text-white">
+                                    <h5><i class="fas fa-boxes"></i> Inventory Reports</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li><a href="#" onclick="generateReport('medicine_stock')"><i
+                                                    class="fas fa-capsules"></i> Medicine Stock Report</a></li>
+                                        <li><a href="#" onclick="generateReport('expiry_alerts')"><i
+                                                    class="fas fa-exclamation-circle"></i> Expiry Alerts</a></li>
+                                        <li><a href="#" onclick="generateReport('consumption_analysis')"><i
+                                                    class="fas fa-chart-bar"></i> Consumption Analysis</a></li>
+                                        <li><a href="#" onclick="generateReport('vendor_performance')"><i
+                                                    class="fas fa-truck"></i> Vendor Performance</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Summary -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Monthly Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-primary">${{ "%.2f"|format(monthly_revenue) }}</h3>
+                                <p>Monthly Revenue</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-success">{{ total_beds }}</h3>
+                                <p>Total Beds</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-warning">{{ occupied_beds }}</h3>
+                                <p>Occupied Beds</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-info">{{ "%.1f"|format(occupancy_rate) }}%</h3>
+                                <p>Occupancy Rate</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Generation Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Generate Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reportForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="reportType" class="form-label">Report Type</label>
+                                <input type="text" class="form-control" id="reportType" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="dateFrom" class="form-label">From Date</label>
+                                <input type="date" class="form-control" id="dateFrom" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="dateTo" class="form-label">To Date</label>
+                                <input type="date" class="form-control" id="dateTo" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="format" class="form-label">Output Format</label>
+                                <select class="form-select" id="format">
+                                    <option value="pdf">PDF</option>
+                                    <option value="excel">Excel</option>
+                                    <option value="csv">CSV</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="department" class="form-label">Department (Optional)</label>
+                                <select class="form-select" id="department">
+                                    <option value="">All Departments</option>
+                                    <option value="cardiology">Cardiology</option>
+                                    <option value="neurology">Neurology</option>
+                                    <option value="orthopedics">Orthopedics</option>
+                                    <option value="pediatrics">Pediatrics</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="emailReport">
+                                    <label class="form-check-label" for="emailReport">
+                                        Email report to me
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="downloadReport()">
+                    <i class="fas fa-download"></i> Generate Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentReportType = '';
+
+    function generateReport(reportType) {
+        currentReportType = reportType;
+
+        // Set report type in modal
+        document.getElementById('reportType').value = reportType.replace('_', ' ').toUpperCase();
+
+        // Set default dates (last 30 days)
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+
+        document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+        document.getElementById('dateFrom').value = thirtyDaysAgo.toISOString().split('T')[0];
+
+        // Show modal
+        new bootstrap.Modal(document.getElementById('reportModal')).show();
+    }
+
+    function downloadReport() {
+        const formData = {
+            reportType: currentReportType,
+            dateFrom: document.getElementById('dateFrom').value,
+            dateTo: document.getElementById('dateTo').value,
+            format: document.getElementById('format').value,
+            department: document.getElementById('department').value,
+            emailReport: document.getElementById('emailReport').checked
+        };
+
+        // Show loading
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+        button.disabled = true;
+
+        // Simulate report generation
+        setTimeout(() => {
+            alert('Report generated successfully! Download will start shortly.');
+
+            // Reset button
+            button.innerHTML = originalText;
+            button.disabled = false;
+
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('reportModal')).hide();
+
+            // In real implementation, this would trigger actual report generation
+            console.log('Report parameters:', formData);
+        }, 2000);
+    }
+
+    // Set default date range on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+
+        if (document.getElementById('dateFrom')) {
+            document.getElementById('dateFrom').value = thirtyDaysAgo.toISOString().split('T')[0];
+        }
+        if (document.getElementById('dateTo')) {
+            document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+        }
+    });
+</script>
+{% endblock %}

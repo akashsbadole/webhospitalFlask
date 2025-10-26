@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Management - Hospital Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Statistics Cards -->
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5>Total Sent</h5>
+                    <h2>{{ stats.get('total_sent', 0) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>Delivered</h5>
+                    <h2>{{ stats.get('delivered', 0) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5>Pending</h5>
+                    <h2>{{ stats.get('pending', 0) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5>Failed</h5>
+                    <h2>{{ stats.get('failed', 0) }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-bell"></i> Send Notification</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('send_notification') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Recipient Type</label>
+                                    <select name="recipient_type" class="form-control" required>
+                                        <option value="patient">Patient</option>
+                                        <option value="staff">Staff</option>
+                                        <option value="doctor">Doctor</option>
+                                        <option value="all_patients">All Patients</option>
+                                        <option value="all_staff">All Staff</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Recipient ID (leave empty for 'all')</label>
+                                    <input type="number" name="recipient_id" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Notification Type</label>
+                                    <select name="notification_type" class="form-control" required>
+                                        <option value="appointment_reminder">Appointment Reminder</option>
+                                        <option value="lab_result_ready">Lab Result Ready</option>
+                                        <option value="bill_reminder">Bill Reminder</option>
+                                        <option value="medication_reminder">Medication Reminder</option>
+                                        <option value="general">General Announcement</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Channels</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" name="channels"
+                                                value="email" checked>
+                                            <label class="form-check-label">Email</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" name="channels" value="sms">
+                                            <label class="form-check-label">SMS</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" name="channels"
+                                                value="whatsapp">
+                                            <label class="form-check-label">WhatsApp</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Subject (for email)</label>
+                            <input type="text" name="subject" class="form-control">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Message</label>
+                            <textarea name="message" class="form-control" rows="4" required></textarea>
+                            <small class="form-text text-muted">
+                                Available variables: {{patient_name}}, {{doctor_name}}, {{appointment_date}},
+                                {{hospital_name}}
+                            </small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Send Notification
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0"><i class="fas fa-history"></i> Recent Notifications</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Recipient</th>
+                                    <th>Type</th>
+                                    <th>Channel</th>
+                                    <th>Status</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if stats.get('recent_notifications') %}
+                                {% for notif in stats.get('recent_notifications', []) %}
+                                <tr>
+                                    <td>{{ notif.created_at.strftime('%Y-%m-%d %H:%M') if notif.created_at else '-' }}
+                                    </td>
+                                    <td>{{ notif.recipient_contact }}</td>
+                                    <td><span class="badge badge-info">{{ notif.notification_type }}</span></td>
+                                    <td><span class="badge badge-secondary">{{ notif.channel }}</span></td>
+                                    <td>
+                                        {% if notif.status == 'sent' %}
+                                        <span class="badge badge-success">Sent</span>
+                                        {% elif notif.status == 'failed' %}
+                                        <span class="badge badge-danger">Failed</span>
+                                        {% else %}
+                                        <span class="badge badge-warning">{{ notif.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><small>{{ notif.message[:50] }}...</small></td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No notifications sent yet</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

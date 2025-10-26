@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs - Hospital Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-shield-alt"></i> Audit Logs & User Activity</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Filter Section -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" id="searchUser" placeholder="Search by username...">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-control" id="actionFilter">
+                                <option value="">All Actions</option>
+                                <option value="login">Login</option>
+                                <option value="logout">Logout</option>
+                                <option value="view">View</option>
+                                <option value="create">Create</option>
+                                <option value="update">Update</option>
+                                <option value="delete">Delete</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-control" id="riskFilter">
+                                <option value="">All Risk Levels</option>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('compliance_report') }}" class="btn btn-success btn-block">
+                                <i class="fas fa-file-download"></i> Generate Compliance Report
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Audit Logs Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Resource</th>
+                                    <th>IP Address</th>
+                                    <th>Risk Level</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in activities.items %}
+                                <tr>
+                                    <td>{{ activity.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>
+                                        <span class="badge badge-info">{{ activity.username }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary">{{ activity.action }}</span>
+                                    </td>
+                                    <td>
+                                        {% if activity.resource_type %}
+                                        {{ activity.resource_type }}
+                                        {% if activity.resource_id %}
+                                        #{{ activity.resource_id }}
+                                        {% endif %}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td><small>{{ activity.ip_address }}</small></td>
+                                    <td>
+                                        {% if activity.risk_level == 'critical' %}
+                                        <span class="badge badge-danger">Critical</span>
+                                        {% elif activity.risk_level == 'high' %}
+                                        <span class="badge badge-warning">High</span>
+                                        {% elif activity.risk_level == 'medium' %}
+                                        <span class="badge badge-info">Medium</span>
+                                        {% else %}
+                                        <span class="badge badge-success">Low</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if activity.details %}
+                                        <button class="btn btn-sm btn-outline-primary" data-toggle="modal"
+                                            data-target="#detailsModal{{ activity.id }}">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+
+                                        <!-- Details Modal -->
+                                        <div class="modal fade" id="detailsModal{{ activity.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Activity Details</h5>
+                                                        <button type="button" class="close" data-dismiss="modal">
+                                                            <span>&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <pre>{{ activity.details }}</pre>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if activities.pages > 1 %}
+                    <nav>
+                        <ul class="pagination justify-content-center">
+                            {% if activities.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ activities.prev_num }}">Previous</a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in activities.iter_pages(left_edge=1, right_edge=1, left_current=1,
+                            right_current=2) %}
+                            {% if page_num %}
+                            <li class="page-item {% if page_num == activities.page %}active{% endif %}">
+                                <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if activities.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ activities.next_num }}">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

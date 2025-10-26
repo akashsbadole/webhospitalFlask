@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Backup Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">Database Backup Management</h3>
+                    <button class="btn btn-primary" onclick="createBackup()">
+                        <i class="fas fa-plus"></i> Create Backup
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Backup Type</th>
+                                    <th>Date Created</th>
+                                    <th>File Size</th>
+                                    <th>Compressed</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for backup in backups %}
+                                <tr>
+                                    <td>{{ backup.file_name }}</td>
+                                    <td>
+                                        <span
+                                            class="badge badge-{{ 'success' if backup.backup_type == 'manual' else 'info' }}">
+                                            {{ backup.backup_type.title() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ backup.timestamp }}</td>
+                                    <td>{{ "%.2f"|format(backup.file_size / 1024 / 1024) }} MB</td>
+                                    <td>
+                                        {% if backup.compressed %}
+                                        <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                        <i class="fas fa-times text-danger"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info"
+                                            onclick="verifyBackup('{{ backup.file_path }}')">
+                                            <i class="fas fa-check-circle"></i> Verify
+                                        </button>
+                                        <button class="btn btn-sm btn-warning"
+                                            onclick="restoreBackup('{{ backup.file_path }}')">
+                                            <i class="fas fa-undo"></i> Restore
+                                        </button>
+                                        <a href="{{ backup.file_path }}" class="btn btn-sm btn-secondary" download>
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function createBackup() {
+        if (confirm('Create a new database backup?')) {
+            fetch('/admin/backup/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Backup creation failed');
+                }
+            });
+        }
+    }
+
+    function verifyBackup(backupPath) {
+        fetch(`/admin/backup/verify/${encodeURIComponent(backupPath)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.valid) {
+                    alert('Backup verification successful: ' + data.message);
+                } else {
+                    alert('Backup verification failed: ' + data.message);
+                }
+            });
+    }
+
+    function restoreBackup(backupPath) {
+        if (confirm('WARNING: This will replace the current database. Are you sure?')) {
+            if (confirm('This action cannot be undone. Continue?')) {
+                fetch(`/admin/backup/restore/${encodeURIComponent(backupPath)}`, {
+                    method: 'POST'
+                }).then(response => {
+                    if (response.ok) {
+                        alert('Database restored successfully');
+                        location.reload();
+                    } else {
+                        alert('Restore failed');
+                    }
+                });
+            }
+        }
+    }
+</script>
+{% endblock %}

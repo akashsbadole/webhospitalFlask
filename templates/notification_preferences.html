@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Preferences - Hospital Management System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-cog"></i> Notification Preferences</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('update_notification_preferences') }}">
+                        <p class="text-muted">Choose how you want to receive notifications</p>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Notification Type</th>
+                                        <th class="text-center">Email</th>
+                                        <th class="text-center">SMS</th>
+                                        <th class="text-center">WhatsApp</th>
+                                        <th class="text-center">Push</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set notification_types = [
+                                    ('appointment_reminder', 'Appointment Reminders'),
+                                    ('lab_result_ready', 'Lab Results'),
+                                    ('bill_reminder', 'Bill Reminders'),
+                                    ('medication_reminder', 'Medication Reminders'),
+                                    ('general', 'General Announcements')
+                                    ] %}
+
+                                    {% for type_code, type_name in notification_types %}
+                                    <tr>
+                                        <td><strong>{{ type_name }}</strong></td>
+                                        <td class="text-center">
+                                            <input type="checkbox" name="{{ type_code }}_email" {% if
+                                                preferences.get(type_code, {}).get('email_enabled', True) %}checked{%
+                                                endif %}>
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" name="{{ type_code }}_sms" {% if
+                                                preferences.get(type_code, {}).get('sms_enabled', False) %}checked{%
+                                                endif %}>
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" name="{{ type_code }}_whatsapp" {% if
+                                                preferences.get(type_code, {}).get('whatsapp_enabled', False)
+                                                %}checked{% endif %}>
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" name="{{ type_code }}_push" {% if
+                                                preferences.get(type_code, {}).get('push_enabled', True) %}checked{%
+                                                endif %}>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Note:</strong> SMS and WhatsApp notifications may incur additional charges.
+                            Email and push notifications are free.
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Preferences
+                            </button>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

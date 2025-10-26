@@ -1,0 +1,443 @@
+{% extends "base.html" %} {% block title %}Telemedicine - {{ get_text('title')
+}}{% endblock %} {% block content %}
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <h2>
+        <i class="fas fa-video text-info"></i>
+        {{ get_text('telemedicine') }}
+      </h2>
+    </div>
+    <div class="col-md-6 text-end">
+      <a href="{{ url_for('add_appointment') }}" class="btn btn-info">
+        <i class="fas fa-calendar-plus"></i> Schedule Telemedicine
+      </a>
+    </div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-3">
+      <div class="card stats-card">
+        <div class="card-body text-center">
+          <div class="stats-icon bg-info mx-auto mb-2">
+            <i class="fas fa-video"></i>
+          </div>
+          <h4 class="text-info">{{ appointments|length }}</h4>
+          <p class="text-muted mb-0">Total Sessions</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stats-card">
+        <div class="card-body text-center">
+          <div class="stats-icon bg-success mx-auto mb-2">
+            <i class="fas fa-clock"></i>
+          </div>
+          <h4 class="text-success">
+            {{ appointments|selectattr('status', 'equalto',
+            'scheduled')|list|length }}
+          </h4>
+          <p class="text-muted mb-0">Upcoming</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stats-card">
+        <div class="card-body text-center">
+          <div class="stats-icon bg-warning mx-auto mb-2">
+            <i class="fas fa-users"></i>
+          </div>
+          <h4 class="text-warning">
+            {{ appointments|map(attribute='patient')|unique|list|length }}
+          </h4>
+          <p class="text-muted mb-0">Patients</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stats-card">
+        <div class="card-body text-center">
+          <div class="stats-icon bg-primary mx-auto mb-2">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <h4 class="text-primary">
+            {{ appointments|selectattr('status', 'equalto',
+            'completed')|list|length }}
+          </h4>
+          <p class="text-muted mb-0">Completed</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Today's Sessions -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-calendar-day"></i> Today's Telemedicine Sessions
+          </h5>
+        </div>
+        <div class="card-body">
+          {% set today_sessions =
+          appointments|selectattr('appointment_date')|select('today')|list %} {%
+          if today_sessions %}
+          <div class="row g-3">
+            {% for session in today_sessions %}
+            <div class="col-md-6 col-lg-4">
+              <div class="card border-info">
+                <div class="card-body">
+                  <div
+                    class="d-flex justify-content-between align-items-start mb-2"
+                  >
+                    <h6 class="card-title mb-0">
+                      {{ session.patient.first_name }} {{
+                      session.patient.last_name }}
+                    </h6>
+                    <span
+                      class="badge bg-{{ 'success' if session.status == 'scheduled' else 'secondary' }}"
+                    >
+                      {{ session.status.title() }}
+                    </span>
+                  </div>
+                  <p class="card-text">
+                    <small class="text-muted">
+                      <i class="fas fa-clock"></i> {{
+                      session.appointment_date.strftime('%I:%M %p') }} <br /><i
+                        class="fas fa-user-md"
+                      ></i>
+                      {{ session.doctor.full_name }}
+                    </small>
+                  </p>
+                  {% if session.status == 'scheduled' and session.meeting_link
+                  %}
+                  <div class="d-grid gap-2">
+                    <a
+                      href="{{ session.meeting_link }}"
+                      target="_blank"
+                      class="btn btn-info btn-sm"
+                    >
+                      <i class="fas fa-video"></i> Join Meeting
+                    </a>
+                    <button
+                      class="btn btn-outline-success btn-sm"
+                      onclick="completeSession({{ session.id }})"
+                    >
+                      <i class="fas fa-check"></i> Mark Complete
+                    </button>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-4">
+            <i class="fas fa-video fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No telemedicine sessions today</h5>
+            <p class="text-muted">
+              Schedule a telemedicine appointment to get started.
+            </p>
+            <a href="{{ url_for('add_appointment') }}" class="btn btn-info">
+              <i class="fas fa-calendar-plus"></i> Schedule Session
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- All Telemedicine Appointments -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-list"></i> All Telemedicine Appointments
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          {% if appointments %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Patient</th>
+                  <th>Doctor</th>
+                  <th>Status</th>
+                  <th>Meeting</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for appointment in appointments %}
+                <tr>
+                  <td>
+                    <div>
+                      <strong
+                        >{{ appointment.appointment_date.strftime('%m/%d/%Y')
+                        }}</strong
+                      >
+                      <br /><small class="text-muted"
+                        >{{ appointment.appointment_date.strftime('%I:%M %p')
+                        }}</small
+                      >
+                    </div>
+                  </td>
+                  <td>
+                    <div>
+                      <strong
+                        >{{ appointment.patient.first_name }} {{
+                        appointment.patient.last_name }}</strong
+                      >
+                      <br /><small class="text-muted"
+                        >{{ appointment.patient.patient_id }}</small
+                      >
+                    </div>
+                  </td>
+                  <td>
+                    <div>
+                      <i class="fas fa-user-md text-primary"></i>
+                      {{ appointment.doctor.full_name }}
+                    </div>
+                  </td>
+                  <td>
+                    {% set status_colors = { 'scheduled': 'primary',
+                    'completed': 'success', 'cancelled': 'danger', 'no-show':
+                    'warning' } %}
+                    <span
+                      class="badge bg-{{ status_colors.get(appointment.status, 'secondary') }}"
+                    >
+                      {{ appointment.status.title() }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if appointment.meeting_link %}
+                    <a
+                      href="{{ appointment.meeting_link }}"
+                      target="_blank"
+                      class="btn btn-sm btn-info"
+                    >
+                      <i class="fas fa-video"></i> Join
+                    </a>
+                    {% else %}
+                    <span class="text-muted">No link</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      {% if appointment.status == 'scheduled' %}
+                      <button
+                        class="btn btn-outline-success"
+                        onclick="completeSession({{ appointment.id }})"
+                      >
+                        <i class="fas fa-check"></i>
+                      </button>
+                      <button
+                        class="btn btn-outline-warning"
+                        onclick="rescheduleSession({{ appointment.id }})"
+                      >
+                        <i class="fas fa-calendar-alt"></i>
+                      </button>
+                      <button
+                        class="btn btn-outline-danger"
+                        onclick="cancelSession({{ appointment.id }})"
+                      >
+                        <i class="fas fa-times"></i>
+                      </button>
+                      {% endif %}
+                      <button
+                        class="btn btn-outline-primary"
+                        onclick="viewSession({{ appointment.id }})"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5">
+            <i class="fas fa-video fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No telemedicine appointments</h4>
+            <p class="text-muted">
+              Start providing remote healthcare services.
+            </p>
+            <a href="{{ url_for('add_appointment') }}" class="btn btn-info">
+              <i class="fas fa-calendar-plus"></i> Schedule First Session
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Telemedicine Features -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-star"></i> Telemedicine Features
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-4">
+            <div class="col-md-4">
+              <div class="text-center">
+                <div class="stats-icon bg-info mx-auto mb-3">
+                  <i class="fas fa-video"></i>
+                </div>
+                <h6>HD Video Calls</h6>
+                <p class="text-muted small">
+                  High-quality video consultations with patients
+                </p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-center">
+                <div class="stats-icon bg-success mx-auto mb-3">
+                  <i class="fas fa-file-medical"></i>
+                </div>
+                <h6>Digital Prescriptions</h6>
+                <p class="text-muted small">
+                  Send prescriptions directly to patients
+                </p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-center">
+                <div class="stats-icon bg-warning mx-auto mb-3">
+                  <i class="fas fa-shield-alt"></i>
+                </div>
+                <h6>Secure & HIPAA Compliant</h6>
+                <p class="text-muted small">
+                  End-to-end encrypted communications
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Session Details Modal -->
+<div class="modal fade" id="sessionModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-video text-info"></i> Telemedicine Session Details
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body" id="sessionDetails">
+        <!-- Session details will be loaded here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+        <button type="button" class="btn btn-primary" onclick="joinSession()">
+          <i class="fas fa-video"></i> Join Session
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function joinSession() {
+    alert(
+      "Joining session... In a real application, this would open the video call interface."
+    );
+  }
+  function completeSession(sessionId) {
+    if (confirm("Mark this telemedicine session as completed?")) {
+      // In a real application, this would make an API call
+      alert("Session marked as completed!");
+      location.reload();
+    }
+  }
+
+  function rescheduleSession(sessionId) {
+    // In a real application, this would open a reschedule dialog
+    const newDate = prompt("Enter new date (YYYY-MM-DD):");
+    const newTime = prompt("Enter new time (HH:MM):");
+
+    if (newDate && newTime) {
+      // In a real application, this would make an API call
+      alert(`Session rescheduled to ${newDate} at ${newTime}!`);
+      location.reload();
+    }
+  }
+
+  function cancelSession(sessionId) {
+    if (confirm("Cancel this telemedicine session?")) {
+      // In a real application, this would make an API call
+      alert("Session cancelled!");
+      location.reload();
+    }
+  }
+
+  function viewSession(sessionId) {
+    // In a real application, this would show session details
+    const modal = new bootstrap.Modal(document.getElementById("sessionModal"));
+    document.getElementById("sessionDetails").innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-2">Loading session details...</p>
+        </div>
+    `;
+    modal.show();
+
+    // Simulate API call
+    setTimeout(() => {
+      document.getElementById("sessionDetails").innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Session Information</h6>
+                    <p><strong>Session ID:</strong> ${sessionId}</p>
+                    <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                    <p><strong>Time:</strong> 10:00 AM</p>
+                    <p><strong>Status:</strong> <span class="badge bg-primary">Scheduled</span></p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Participants</h6>
+                    <p><strong>Patient:</strong> John Doe</p>
+                    <p><strong>Doctor:</strong> Dr. Smith</p>
+                    <p><strong>Duration:</strong> 30 minutes</p>
+                </div>
+            </div>
+            <hr>
+            <h6>Meeting Details</h6>
+            <p><strong>Meeting Link:</strong> <a href="#" target="_blank">Join Video Call</a></p>
+            <p><strong>Meeting ID:</strong> 123-456-789</p>
+            <p><strong>Passcode:</strong> 123456</p>
+        `;
+    }, 1000);
+  }
+
+  // Auto-refresh for real-time updates
+  setInterval(function () {
+    // In a real application, this would check for updates
+    console.log("Checking for telemedicine updates...");
+  }, 30000); // Check every 30 seconds
+</script>
+{% endblock %}

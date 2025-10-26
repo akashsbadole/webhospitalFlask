@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Add Patient - {{ get_text('title') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2>
+                <i class="fas fa-user-plus text-primary"></i>
+                Add New Patient
+            </h2>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{{ url_for('patients') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Patients
+            </a>
+        </div>
+    </div>
+    
+    <!-- Patient Form -->
+    <form method="POST" id="patientForm">
+        <div class="row g-4">
+            <!-- Personal Information -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user"></i> Personal Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name *</label>
+                                <input type="text" class="form-control" name="first_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" name="last_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" name="date_of_birth">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Gender</label>
+                                <select class="form-select" name="gender">
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Address</label>
+                                <textarea class="form-control" name="address" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Information -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-phone"></i> Contact Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number *</label>
+                                <input type="tel" class="form-control" name="phone" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Emergency Contact</label>
+                                <input type="text" class="form-control" name="emergency_contact">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Emergency Phone</label>
+                                <input type="tel" class="form-control" name="emergency_phone">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Medical Information -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-heartbeat"></i> Medical Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Blood Group</label>
+                                <select class="form-select" name="blood_group">
+                                    <option value="">Select Blood Group</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Allergies</label>
+                                <textarea class="form-control" name="allergies" rows="2" 
+                                         placeholder="List any known allergies..."></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Medical History</label>
+                                <textarea class="form-control" name="medical_history" rows="3" 
+                                         placeholder="Previous medical conditions, surgeries, etc..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Additional Information -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle"></i> Additional Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="consentCheck">
+                                    <label class="form-check-label" for="consentCheck">
+                                        Patient consents to treatment and data processing
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="emergencyCheck">
+                                    <label class="form-check-label" for="emergencyCheck">
+                                        This is an emergency registration
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Notes</label>
+                                <textarea class="form-control" name="notes" rows="3" 
+                                         placeholder="Any additional notes..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-save"></i> Register Patient
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-outline-success btn-lg w-100" onclick="saveAndBookAppointment()">
+                                    <i class="fas fa-calendar-plus"></i> Save & Book Appointment
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="reset" class="btn btn-outline-secondary btn-lg w-100">
+                                    <i class="fas fa-undo"></i> Reset Form
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Form validation and submission
+document.getElementById('patientForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+    submitBtn.disabled = true;
+    
+    // Re-enable button after form submission (in case of validation errors)
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 3000);
+});
+
+// Save and book appointment function
+function saveAndBookAppointment() {
+    const form = document.getElementById('patientForm');
+    const formData = new FormData(form);
+    
+    // Add a flag to indicate we want to book appointment after saving
+    formData.append('book_appointment', 'true');
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            // Redirect to appointment booking with patient info
+            window.location.href = '{{ url_for("add_appointment") }}';
+        } else {
+            alert('Error saving patient. Please try again.');
+        }
+    })
+    .catch(error => {
+        alert('Error saving patient. Please try again.');
+    });
+}
+
+// Auto-format phone numbers
+document.querySelectorAll('input[type="tel"]').forEach(input => {
+    input.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 6) {
+            value = value.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+        } else if (value.length >= 3) {
+            value = value.replace(/(\d{3})(\d{3})/, '($1) $2');
+        }
+        e.target.value = value;
+    });
+});
+
+// Calculate age from date of birth
+document.querySelector('input[name="date_of_birth"]').addEventListener('change', function(e) {
+    if (e.target.value) {
+        const birthDate = new Date(e.target.value);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        
+        // You could display the calculated age somewhere if needed
+        console.log('Patient age:', age);
+    }
+});
+</script>
+{% endblock %}
