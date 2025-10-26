@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Hospital Management System - Web Application (Multi-Tenant Fixed Version)
+Hospital Management System - Web Application
 Flask-based web interface with modern responsive design
-Enhanced with multi-tenant SaaS functionality
 """
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash, make_response, send_file, render_template_string, abort, send_from_directory
@@ -31,11 +30,6 @@ from payment_gateway import init_payment_gateway
 from emergency_management import init_emergency_management
 from inventory_management import init_inventory_management
 from quality_management import init_quality_management
-
-# Multi-Tenant SaaS modules
-from tenant_context import init_tenant_context, get_tenant
-from tenant_routes import init_tenant_routes
-from subscription_plans import SUBSCRIPTION_PLANS
 
 # Import API routes for React integration
 from api_routes import api_bp
@@ -92,61 +86,9 @@ def load_user(user_id):
 
 # Database Models
 
-# =============== TENANT MODEL (Multi-Tenant SaaS) ===============
-class Tenant(db.Model):
-    __tablename__ = 'tenants'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    tenant_code = db.Column(db.String(20), unique=True, nullable=False)
-    name = db.Column(db.String(200), nullable=False)
-    subdomain = db.Column(db.String(100), unique=True, nullable=False)
-    custom_domain = db.Column(db.String(200), unique=True)
-    
-    # Subscription details
-    subscription_plan = db.Column(db.String(50), default='basic')  # basic, professional, enterprise
-    subscription_status = db.Column(db.String(20), default='trial')  # trial, active, suspended, cancelled
-    trial_ends_at = db.Column(db.DateTime)
-    subscription_starts_at = db.Column(db.DateTime)
-    subscription_ends_at = db.Column(db.DateTime)
-    
-    # Limits based on plan
-    max_users = db.Column(db.Integer, default=10)
-    max_patients = db.Column(db.Integer, default=1000)
-    max_storage_gb = db.Column(db.Integer, default=5)
-    
-    # Contact information
-    admin_name = db.Column(db.String(100))
-    admin_email = db.Column(db.String(120), nullable=False)
-    admin_phone = db.Column(db.String(20))
-    
-    # Address
-    address = db.Column(db.Text)
-    city = db.Column(db.String(100))
-    state = db.Column(db.String(100))
-    country = db.Column(db.String(100))
-    zip_code = db.Column(db.String(20))
-    
-    # Database configuration (for separate DB model - future use)
-    database_type = db.Column(db.String(20), default='shared')  # shared, dedicated
-    
-    # Settings
-    timezone = db.Column(db.String(50), default='UTC')
-    currency = db.Column(db.String(10), default='USD')
-    language = db.Column(db.String(10), default='en')
-    
-    # Branding
-    logo_url = db.Column(db.String(500))
-    primary_color = db.Column(db.String(20), default='#007bff')
-    secondary_color = db.Column(db.String(20), default='#6c757d')
-    
-    # Status
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class WebUser(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)  # NULL for superadmin
     username = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
@@ -164,20 +106,10 @@ class WebUser(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
-    
-    # Relationships
-    tenant = db.relationship('Tenant', backref='users')
-    
-    # Composite unique constraint for username per tenant
-    __table_args__ = (
-        db.UniqueConstraint('tenant_id', 'username', name='uq_tenant_username'),
-        db.UniqueConstraint('tenant_id', 'employee_id', name='uq_tenant_employee_id'),
-    )
 
 class WebPatient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)  # Add tenant support
-    patient_id = db.Column(db.String(20), nullable=False)
+    patient_id = db.Column(db.String(20), unique=True, nullable=False)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120))
@@ -204,13 +136,9 @@ class WebPatient(db.Model):
     occupation = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    tenant = db.relationship('Tenant', backref='patients')
 
 class WebAppointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('web_patient.id'), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('web_user.id'), nullable=False)
     appointment_date = db.Column(db.DateTime, nullable=False)
@@ -220,13 +148,11 @@ class WebAppointment(db.Model):
     meeting_link = db.Column(db.String(500))  # For telemedicine
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    tenant = db.relationship('Tenant', backref='appointments')
     patient = db.relationship('WebPatient', backref='appointments')
     doctor = db.relationship('WebUser', backref='appointments')
 
 class WebEnquiry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)  # Can be null for public enquiries
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), nullable=False)
     phone = db.Column(db.String(20), nullable=False)
@@ -237,12 +163,9 @@ class WebEnquiry(db.Model):
     assigned_to = db.Column(db.Integer, db.ForeignKey('web_user.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    tenant = db.relationship('Tenant', backref='enquiries')
 
 class WebAttendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('web_user.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     check_in = db.Column(db.DateTime)
@@ -251,13 +174,11 @@ class WebAttendance(db.Model):
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    tenant = db.relationship('Tenant', backref='attendance_records')
     user = db.relationship('WebUser', backref='attendance_records')
 
 # EHR - Electronic Health Records
 class MedicalRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('web_patient.id'), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('web_user.id'), nullable=False)
     visit_date = db.Column(db.DateTime, nullable=False)
@@ -268,14 +189,12 @@ class MedicalRecord(db.Model):
     vital_signs = db.Column(db.Text)  # JSON string
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    tenant = db.relationship('Tenant', backref='medical_records')
     patient = db.relationship('WebPatient', backref='medical_records')
     doctor = db.relationship('WebUser', backref='medical_records')
 
 # Prescriptions
 class Prescription(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('web_patient.id'), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('web_user.id'), nullable=False)
     medical_record_id = db.Column(db.Integer, db.ForeignKey('medical_record.id'))
@@ -285,14 +204,12 @@ class Prescription(db.Model):
     status = db.Column(db.String(20), default='active')  # active, completed, cancelled
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    tenant = db.relationship('Tenant', backref='prescriptions')
     patient = db.relationship('WebPatient', backref='prescriptions')
     doctor = db.relationship('WebUser', backref='prescriptions')
 
 # Laboratory Management
 class LabTest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     test_name = db.Column(db.String(100), nullable=False)
     test_code = db.Column(db.String(20), nullable=False)
     category = db.Column(db.String(50))
@@ -300,12 +217,9 @@ class LabTest(db.Model):
     price = db.Column(db.Float)
     description = db.Column(db.Text)
     is_active = db.Column(db.Boolean, default=True)
-    
-    tenant = db.relationship('Tenant', backref='lab_tests')
 
 class LabOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('web_patient.id'), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('web_user.id'), nullable=False)
     test_id = db.Column(db.Integer, db.ForeignKey('lab_test.id'), nullable=False)
@@ -316,14 +230,12 @@ class LabOrder(db.Model):
     priority = db.Column(db.String(20), default='normal')  # urgent, normal, routine
     notes = db.Column(db.Text)
     
-    tenant = db.relationship('Tenant', backref='lab_orders')
     patient = db.relationship('WebPatient', backref='lab_orders')
     doctor = db.relationship('WebUser', backref='lab_orders')
     test = db.relationship('LabTest', backref='orders')
 
 class LabResult(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     lab_order_id = db.Column(db.Integer, db.ForeignKey('lab_order.id'), nullable=False)
     technician_id = db.Column(db.Integer, db.ForeignKey('web_user.id'))
     result_value = db.Column(db.String(100))
@@ -335,7 +247,6 @@ class LabResult(db.Model):
     verified_date = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    tenant = db.relationship('Tenant', backref='lab_results')
     lab_order = db.relationship('LabOrder', backref='results')
     technician = db.relationship('WebUser', foreign_keys=[technician_id])
     verifier = db.relationship('WebUser', foreign_keys=[verified_by])
@@ -343,19 +254,15 @@ class LabResult(db.Model):
 # Radiology / Imaging
 class ImagingTest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     test_name = db.Column(db.String(100), nullable=False)
     test_code = db.Column(db.String(20), nullable=False)
     category = db.Column(db.String(50))  # X-ray, MRI, CT, Ultrasound
     price = db.Column(db.Float)
     description = db.Column(db.Text)
     is_active = db.Column(db.Boolean, default=True)
-    
-    tenant = db.relationship('Tenant', backref='imaging_tests')
 
 class ImagingOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('web_patient.id'), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('web_user.id'), nullable=False)
     test_id = db.Column(db.Integer, db.ForeignKey('imaging_test.id'), nullable=False)
@@ -366,14 +273,12 @@ class ImagingOrder(db.Model):
     priority = db.Column(db.String(20), default='normal')
     clinical_notes = db.Column(db.Text)
     
-    tenant = db.relationship('Tenant', backref='imaging_orders')
     patient = db.relationship('WebPatient', backref='imaging_orders')
     doctor = db.relationship('WebUser', backref='imaging_orders')
     test = db.relationship('ImagingTest', backref='orders')
 
 class ImagingResult(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     imaging_order_id = db.Column(db.Integer, db.ForeignKey('imaging_order.id'), nullable=False)
     radiologist_id = db.Column(db.Integer, db.ForeignKey('web_user.id'))
     findings = db.Column(db.Text)
@@ -383,14 +288,12 @@ class ImagingResult(db.Model):
     report_path = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    tenant = db.relationship('Tenant', backref='imaging_results')
     imaging_order = db.relationship('ImagingOrder', backref='results')
     radiologist = db.relationship('WebUser', backref='imaging_results')
 
 # Pharmacy Management
 class Medicine(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     generic_name = db.Column(db.String(100))
     brand_name = db.Column(db.String(100))
@@ -406,12 +309,9 @@ class Medicine(db.Model):
     min_stock_level = db.Column(db.Integer, default=10)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    tenant = db.relationship('Tenant', backref='medicines')
 
 class PharmacyOrder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('web_patient.id'), nullable=False)
     prescription_id = db.Column(db.Integer, db.ForeignKey('prescription.id'))
     pharmacist_id = db.Column(db.Integer, db.ForeignKey('web_user.id'))
@@ -423,7 +323,6 @@ class PharmacyOrder(db.Model):
     payment_status = db.Column(db.String(20), default='pending')  # pending, paid, partial
     status = db.Column(db.String(20), default='pending')  # pending, dispensed, cancelled
     
-    tenant = db.relationship('Tenant', backref='pharmacy_orders')
     patient = db.relationship('WebPatient', backref='pharmacy_orders')
     prescription = db.relationship('Prescription', backref='pharmacy_orders')
     pharmacist = db.relationship('WebUser', backref='pharmacy_orders')
@@ -442,31 +341,25 @@ class PharmacyOrderItem(db.Model):
 # Inpatient / Admissions
 class Ward(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     ward_type = db.Column(db.String(50))  # general, icu, emergency, maternity
     total_beds = db.Column(db.Integer, nullable=False)
     available_beds = db.Column(db.Integer, nullable=False)
     charge_per_day = db.Column(db.Float)
     is_active = db.Column(db.Boolean, default=True)
-    
-    tenant = db.relationship('Tenant', backref='wards')
 
 class Bed(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     bed_number = db.Column(db.String(20), nullable=False)
     ward_id = db.Column(db.Integer, db.ForeignKey('ward.id'), nullable=False)
     bed_type = db.Column(db.String(50))  # general, private, icu
     is_occupied = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
     
-    tenant = db.relationship('Tenant', backref='beds')
     ward = db.relationship('Ward', backref='beds')
 
 class Admission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('web_patient.id'), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('web_user.id'), nullable=False)
     bed_id = db.Column(db.Integer, db.ForeignKey('bed.id'), nullable=False)
@@ -479,7 +372,6 @@ class Admission(db.Model):
     discharge_summary = db.Column(db.Text)
     total_charges = db.Column(db.Float, default=0)
     
-    tenant = db.relationship('Tenant', backref='admissions')
     patient = db.relationship('WebPatient', backref='admissions')
     doctor = db.relationship('WebUser', backref='admissions')
     bed = db.relationship('Bed', backref='admissions')
@@ -487,7 +379,6 @@ class Admission(db.Model):
 # Billing System
 class Bill(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     bill_number = db.Column(db.String(50), unique=True, nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('web_patient.id'), nullable=False)
     bill_type = db.Column(db.String(20), nullable=False)  # opd, ipd, lab, pharmacy, imaging
@@ -502,7 +393,6 @@ class Bill(db.Model):
     insurance_claim_amount = db.Column(db.Float, default=0)
     created_by = db.Column(db.Integer, db.ForeignKey('web_user.id'))
     
-    tenant = db.relationship('Tenant', backref='bills')
     patient = db.relationship('WebPatient', backref='bills')
     created_by_user = db.relationship('WebUser', backref='created_bills')
 
@@ -518,7 +408,6 @@ class BillItem(db.Model):
 
 class Payment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     bill_id = db.Column(db.Integer, db.ForeignKey('bill.id'), nullable=False)
     payment_date = db.Column(db.DateTime, default=datetime.utcnow)
     amount = db.Column(db.Float, nullable=False)
@@ -527,14 +416,12 @@ class Payment(db.Model):
     notes = db.Column(db.Text)
     received_by = db.Column(db.Integer, db.ForeignKey('web_user.id'))
     
-    tenant = db.relationship('Tenant', backref='payments')
     bill = db.relationship('Bill', backref='payments')
     received_by_user = db.relationship('WebUser', backref='received_payments')
 
 # Insurance Claims
 class InsuranceClaim(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     patient_id = db.Column(db.Integer, db.ForeignKey('web_patient.id'), nullable=False)
     bill_id = db.Column(db.Integer, db.ForeignKey('bill.id'), nullable=False)
     claim_number = db.Column(db.String(50), unique=True, nullable=False)
@@ -546,15 +433,13 @@ class InsuranceClaim(db.Model):
     policy_number = db.Column(db.String(50))
     notes = db.Column(db.Text)
     
-    tenant = db.relationship('Tenant', backref='insurance_claims')
     patient = db.relationship('WebPatient', backref='insurance_claims')
     bill = db.relationship('Bill', backref='insurance_claims')
 
 # Settings Management Models
 class HospitalSetting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)  # Can be null for global settings
-    setting_key = db.Column(db.String(100), nullable=False)
+    setting_key = db.Column(db.String(100), unique=True, nullable=False)
     setting_value = db.Column(db.Text)
     setting_type = db.Column(db.String(20), default='string')  # string, number, boolean, json
     category = db.Column(db.String(50), default='general')  # general, organization, security, clinical, etc.
@@ -562,18 +447,11 @@ class HospitalSetting(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    tenant = db.relationship('Tenant', backref='settings')
-    
-    __table_args__ = (
-        db.UniqueConstraint('tenant_id', 'setting_key', name='uq_tenant_setting'),
-    )
 
 class HospitalBranch(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    code = db.Column(db.String(20), nullable=False)
+    code = db.Column(db.String(20), unique=True, nullable=False)
     address = db.Column(db.Text)
     city = db.Column(db.String(50))
     state = db.Column(db.String(50))
@@ -585,12 +463,9 @@ class HospitalBranch(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    tenant = db.relationship('Tenant', backref='branches')
 
 class NotificationTemplate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)  # Can be null for global templates
     name = db.Column(db.String(100), nullable=False)
     code = db.Column(db.String(50), unique=True, nullable=False)
     description = db.Column(db.Text)
@@ -602,12 +477,9 @@ class NotificationTemplate(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    tenant = db.relationship('Tenant', backref='notification_templates')
 
 class PaymentGateway(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)  # Can be null for global gateways
     name = db.Column(db.String(100), nullable=False)
     code = db.Column(db.String(20), unique=True, nullable=False)
     gateway_type = db.Column(db.String(50))  # paypal, razorpay, paytm, stripe
@@ -618,14 +490,11 @@ class PaymentGateway(db.Model):
     is_active = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    tenant = db.relationship('Tenant', backref='payment_gateways')
 
 class InsuranceProvider(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    code = db.Column(db.String(20), nullable=False)
+    code = db.Column(db.String(20), unique=True, nullable=False)
     contact_person = db.Column(db.String(100))
     phone = db.Column(db.String(20))
     email = db.Column(db.String(120))
@@ -634,14 +503,11 @@ class InsuranceProvider(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    tenant = db.relationship('Tenant', backref='insurance_providers')
 
 class DiscountPolicy(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    code = db.Column(db.String(20), nullable=False)
+    code = db.Column(db.String(20), unique=True, nullable=False)
     discount_type = db.Column(db.String(20))  # percentage, fixed
     discount_value = db.Column(db.Float, nullable=False)
     min_amount = db.Column(db.Float, default=0)
@@ -653,12 +519,9 @@ class DiscountPolicy(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    tenant = db.relationship('Tenant', backref='discount_policies')
 
 class TaxRule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     tax_type = db.Column(db.String(20))  # gst, vat, sales_tax
     tax_percentage = db.Column(db.Float, nullable=False)
@@ -667,12 +530,9 @@ class TaxRule(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    tenant = db.relationship('Tenant', backref='tax_rules')
 
 class ConsentForm(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     form_type = db.Column(db.String(50))  # treatment, privacy, telemedicine
     description = db.Column(db.Text)
@@ -681,12 +541,9 @@ class ConsentForm(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    tenant = db.relationship('Tenant', backref='consent_forms')
 
 class UserRoleTemplate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)  # Can be null for global templates
     name = db.Column(db.String(100), nullable=False)
     base_role = db.Column(db.String(50))  # admin, doctor, nurse, etc.
     permissions = db.Column(db.Text)  # JSON string of permissions
@@ -694,12 +551,9 @@ class UserRoleTemplate(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    tenant = db.relationship('Tenant', backref='user_role_templates')
 
 class AppointmentSlotTemplate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)  # Can be null for global templates
     name = db.Column(db.String(100), nullable=False)
     duration = db.Column(db.Integer, default=15)  # Duration in minutes
     buffer_time = db.Column(db.Integer, default=5)  # Buffer time in minutes
@@ -707,37 +561,27 @@ class AppointmentSlotTemplate(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    tenant = db.relationship('Tenant', backref='appointment_slot_templates')
 
 # Departments and Services
 class Department(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    code = db.Column(db.String(20), nullable=False)
+    code = db.Column(db.String(20), unique=True, nullable=False)
     description = db.Column(db.Text)
     head_of_department = db.Column(db.Integer, db.ForeignKey('web_user.id'))
     is_active = db.Column(db.Boolean, default=True)
     
-    tenant = db.relationship('Tenant', backref='departments')
     hod = db.relationship('WebUser', backref='headed_departments')
-    
-    __table_args__ = (
-        db.UniqueConstraint('tenant_id', 'code', name='uq_tenant_dept_code'),
-    )
 
 class Service(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    code = db.Column(db.String(20), nullable=False)
+    code = db.Column(db.String(20), unique=True, nullable=False)
     department_id = db.Column(db.Integer, db.ForeignKey('department.id'))
     price = db.Column(db.Float)
     description = db.Column(db.Text)
     is_active = db.Column(db.Boolean, default=True)
     
-    tenant = db.relationship('Tenant', backref='services')
     department = db.relationship('Department', backref='services')
 
 # Comprehensive Language Support
@@ -1691,34 +1535,9 @@ def get_text(key):
     lang = get_language()
     return LANGUAGES.get(lang, LANGUAGES['en']).get(key, key)
 
-# Helper functions for tenant-aware queries
-def get_tenant_query(model_class):
-    """Get a query filtered by current tenant"""
-    tenant = get_tenant()
-    if tenant:
-        return model_class.query.filter_by(tenant_id=tenant.id)
-    elif current_user and current_user.tenant_id:
-        return model_class.query.filter_by(tenant_id=current_user.tenant_id)
-    else:
-        # For superadmin or when no tenant context
-        return model_class.query
-
-def require_tenant_context(f):
-    """Decorator to require tenant context for a route"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        tenant = get_tenant()
-        if not tenant and (not current_user or current_user.tenant_id is None):
-            # Only superadmin can access without tenant context
-            if not current_user or current_user.role != 'superadmin':
-                flash('Tenant context required', 'error')
-                return redirect(url_for('select_tenant'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-def generate_patient_id(tenant_id):
-    """Generate unique patient ID for a tenant"""
-    count = WebPatient.query.filter_by(tenant_id=tenant_id).count()
+def generate_patient_id():
+    """Generate unique patient ID"""
+    count = WebPatient.query.count()
     return f'P{count + 1:06d}'
 
 # Routes
@@ -1735,8 +1554,7 @@ def login():
         password = request.form['password']
         
         user = WebUser.query.filter(
-            (WebUser.username == username) & 
-            (WebUser.tenant_id == get_tenant().id if get_tenant() else WebUser.tenant_id.is_(None))
+            (WebUser.username == username)
         ).first()
         
         if user and check_password_hash(user.password_hash, password):
@@ -1788,65 +1606,60 @@ def logout():
 
 @app.route('/dashboard')
 @login_required
-@require_tenant_context
 def dashboard():
-    tenant = get_tenant()
-    
-    # Get dashboard statistics for current tenant
-    total_patients = get_tenant_query(WebPatient).count()
+    # Get dashboard statistics
+    total_patients = WebPatient.query.count()
     today = datetime.now().date()
     
     # Today's statistics
-    today_appointments = get_tenant_query(WebAppointment).filter(
+    today_appointments = WebAppointment.query.filter(
         WebAppointment.appointment_date >= today,
         WebAppointment.appointment_date < today + timedelta(days=1)
     ).count()
     
-    today_admissions = get_tenant_query(Admission).filter(
+    today_admissions = Admission.query.filter(
         Admission.admission_date >= today,
         Admission.status == 'admitted'
     ).count()
     
-    pending_enquiries = get_tenant_query(WebEnquiry).filter_by(status='new').count()
+    pending_enquiries = WebEnquiry.query.filter_by(status='new').count()
     
     # Lab and imaging statistics
-    pending_lab_orders = get_tenant_query(LabOrder).filter(LabOrder.status.in_(['ordered', 'collected'])).count()
-    pending_imaging_orders = get_tenant_query(ImagingOrder).filter(ImagingOrder.status.in_(['ordered', 'scheduled'])).count()
+    pending_lab_orders = LabOrder.query.filter(LabOrder.status.in_(['ordered', 'collected'])).count()
+    pending_imaging_orders = ImagingOrder.query.filter(ImagingOrder.status.in_(['ordered', 'scheduled'])).count()
     
     # Financial statistics
     today_revenue = db.session.query(db.func.sum(Payment.amount)).filter(
-        Payment.tenant_id == tenant.id,
         Payment.payment_date >= today
     ).scalar() or 0
     
-    pending_bills = get_tenant_query(Bill).filter(Bill.payment_status.in_(['pending', 'partial'])).count()
+    pending_bills = Bill.query.filter(Bill.payment_status.in_(['pending', 'partial'])).count()
     
     # Bed occupancy
-    total_beds = get_tenant_query(Bed).filter_by(is_active=True).count()
-    occupied_beds = get_tenant_query(Bed).filter_by(is_occupied=True).count()
+    total_beds = Bed.query.filter_by(is_active=True).count()
+    occupied_beds = Bed.query.filter_by(is_occupied=True).count()
     occupancy_rate = (occupied_beds / total_beds * 100) if total_beds > 0 else 0
     
     # Medicine alerts
-    low_stock_medicines = get_tenant_query(Medicine).filter(
+    low_stock_medicines = Medicine.query.filter(
         Medicine.stock_quantity <= Medicine.min_stock_level,
         Medicine.is_active == True
     ).count()
     
     # Recent activities
-    recent_patients = get_tenant_query(WebPatient).order_by(WebPatient.created_at.desc()).limit(5).all()
-    upcoming_appointments = get_tenant_query(WebAppointment).filter(
+    recent_patients = WebPatient.query.order_by(WebPatient.created_at.desc()).limit(5).all()
+    upcoming_appointments = WebAppointment.query.filter(
         WebAppointment.appointment_date >= datetime.now()
     ).order_by(WebAppointment.appointment_date).limit(5).all()
     
-    recent_admissions = get_tenant_query(Admission).filter_by(status='admitted').order_by(
+    recent_admissions = Admission.query.filter_by(status='admitted').order_by(
         Admission.admission_date.desc()
     ).limit(5).all()
     
     # Critical alerts
-    critical_lab_results = get_tenant_query(LabResult).filter_by(status='critical').count()
+    critical_lab_results = LabResult.query.filter_by(status='critical').count()
     
     return render_template('dashboard.html',
-                         tenant=tenant,
                          total_patients=total_patients,
                          today_appointments=today_appointments,
                          today_admissions=today_admissions,
@@ -1866,7 +1679,6 @@ def dashboard():
 
 @app.route('/patients')
 @login_required
-@require_tenant_context
 def patients():
     page_str = request.args.get('page', '1')
     search = request.args.get('search', '')
@@ -1877,7 +1689,7 @@ def patients():
     except (ValueError, TypeError):
         page = 1
     
-    query = get_tenant_query(WebPatient)
+    query = WebPatient.query
     if search:
         query = query.filter(
             (WebPatient.first_name.contains(search)) |
@@ -1896,16 +1708,12 @@ def patients():
 
 @app.route('/patient/add', methods=['GET', 'POST'])
 @login_required
-@require_tenant_context
 def add_patient():
-    tenant = get_tenant()
-    
     if request.method == 'POST':
-        # Generate patient ID for current tenant
-        patient_id = generate_patient_id(tenant.id)
+        # Generate patient ID
+        patient_id = generate_patient_id()
         
         patient = WebPatient(
-            tenant_id=tenant.id,
             patient_id=patient_id,
             first_name=request.form['first_name'],
             last_name=request.form['last_name'],
@@ -1930,10 +1738,8 @@ def add_patient():
 
 @app.route('/patient/edit/<int:patient_id>', methods=['GET', 'POST'])
 @login_required
-@require_tenant_context
 def edit_patient(patient_id):
-    tenant = get_tenant()
-    patient = get_tenant_query(WebPatient).filter_by(id=patient_id).first_or_404()
+    patient = WebPatient.query.filter_by(id=patient_id).first_or_404()
     
     if request.method == 'POST':
         # Update patient information
@@ -1972,13 +1778,12 @@ def edit_patient(patient_id):
 
 @app.route('/appointments')
 @login_required
-@require_tenant_context
 def appointments():
     page = request.args.get('page', 1, type=int)
     date_filter = request.args.get('date', '')
     status_filter = request.args.get('status', '')
     
-    query = get_tenant_query(WebAppointment)
+    query = WebAppointment.query
     
     if date_filter:
         filter_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
@@ -1999,13 +1804,9 @@ def appointments():
 
 @app.route('/appointment/add', methods=['GET', 'POST'])
 @login_required
-@require_tenant_context
 def add_appointment():
-    tenant = get_tenant()
-    
     if request.method == 'POST':
         appointment = WebAppointment(
-            tenant_id=tenant.id,
             patient_id=request.form['patient_id'],
             doctor_id=request.form['doctor_id'],
             appointment_date=datetime.strptime(request.form['appointment_datetime'], '%Y-%m-%dT%H:%M'),
@@ -2022,8 +1823,8 @@ def add_appointment():
         flash('Appointment scheduled successfully!', 'success')
         return redirect(url_for('appointments'))
     
-    patients = get_tenant_query(WebPatient).all()
-    doctors = get_tenant_query(WebUser).filter_by(role='doctor').all()
+    patients = WebPatient.query.all()
+    doctors = WebUser.query.filter_by(role='doctor').all()
     min_datetime = datetime.now().strftime("%Y-%m-%dT%H:%M")
     
     return render_template('add_appointment.html',
@@ -3546,34 +3347,11 @@ def init_web_db():
         # Start notification scheduler after all systems are initialized
         notification_system.start_notification_scheduler()
         
-        # Create default tenant if not exists
-        default_tenant = Tenant.query.filter_by(tenant_code='DEFAULT').first()
-        if not default_tenant:
-            default_tenant = Tenant(
-                tenant_code='DEFAULT',
-                name='Default Hospital',
-                subdomain='default',
-                admin_name='System Administrator',
-                admin_email='admin@hospital.com',
-                subscription_plan='enterprise',
-                subscription_status='active',
-                max_users=1000,
-                max_patients=10000,
-                max_storage_gb=100,
-                address='123 Hospital Street',
-                city='Medical City',
-                state='Healthcare State',
-                country='Medical Country',
-                zip_code='12345'
-            )
-            db.session.add(default_tenant)
-            db.session.commit()
-        
+       
         # Create admin user if not exists
         admin = WebUser.query.filter_by(username='admin').first()
         if not admin:
             admin = WebUser(
-                tenant_id=default_tenant.id,
                 username='admin',
                 email='admin@hospital.com',
                 password_hash=generate_password_hash('admin123'),
@@ -3598,7 +3376,6 @@ def init_web_db():
             existing_user = WebUser.query.filter_by(username=user_data['username']).first()
             if not existing_user:
                 user = WebUser(
-                    tenant_id=default_tenant.id,
                     username=user_data['username'],
                     email=user_data['email'],
                     password_hash=generate_password_hash(user_data['password']),
@@ -3624,10 +3401,9 @@ def init_web_db():
         ]
         
         for dept_data in departments_data:
-            existing_dept = Department.query.filter_by(tenant_id=default_tenant.id, code=dept_data['code']).first()
+            existing_dept = Department.query.filter_by( code=dept_data['code']).first()
             if not existing_dept:
                 dept = Department(
-                    tenant_id=default_tenant.id,
                     name=dept_data['name'],
                     code=dept_data['code'],
                     description=f"{dept_data['name']} Department"
@@ -3644,10 +3420,9 @@ def init_web_db():
         ]
         
         for ward_data in wards_data:
-            existing_ward = Ward.query.filter_by(tenant_id=default_tenant.id, name=ward_data['name']).first()
+            existing_ward = Ward.query.filter_by( name=ward_data['name']).first()
             if not existing_ward:
                 ward = Ward(
-                    tenant_id=default_tenant.id,
                     name=ward_data['name'],
                     ward_type=ward_data['ward_type'],
                     total_beds=ward_data['total_beds'],
@@ -3660,7 +3435,6 @@ def init_web_db():
                 # Create beds for this ward
                 for bed_num in range(1, ward_data['total_beds'] + 1):
                     bed = Bed(
-                        tenant_id=default_tenant.id,
                         bed_number=f"{ward_data['name'][:3]}{bed_num:02d}",
                         ward_id=ward.id,
                         bed_type='general' if ward_data['ward_type'] != 'icu' else 'icu'
@@ -3677,9 +3451,8 @@ def init_web_db():
         ]
         
         for test_data in lab_tests_data:
-            existing_test = LabTest.query.filter_by(tenant_id=default_tenant.id, test_code=test_data['test_code']).first()
+            existing_test = LabTest.query.filter_by( test_code=test_data['test_code']).first()
             if not existing_test:
-                test_data['tenant_id'] = default_tenant.id
                 test = LabTest(**test_data)
                 db.session.add(test)
         
@@ -3693,9 +3466,8 @@ def init_web_db():
         ]
         
         for test_data in imaging_tests_data:
-            existing_test = ImagingTest.query.filter_by(tenant_id=default_tenant.id, test_code=test_data['test_code']).first()
+            existing_test = ImagingTest.query.filter_by(test_code=test_data['test_code']).first()
             if not existing_test:
-                test_data['tenant_id'] = default_tenant.id
                 test = ImagingTest(**test_data)
                 db.session.add(test)
         
@@ -3709,9 +3481,8 @@ def init_web_db():
         ]
         
         for med_data in medicines_data:
-            existing_med = Medicine.query.filter_by(tenant_id=default_tenant.id, name=med_data['name'], strength=med_data['strength']).first()
+            existing_med = Medicine.query.filter_by(name=med_data['name'], strength=med_data['strength']).first()
             if not existing_med:
-                med_data['tenant_id'] = default_tenant.id
                 medicine = Medicine(**med_data)
                 db.session.add(medicine)
         
@@ -3725,9 +3496,8 @@ def init_web_db():
         ]
         
         for service_data in services_data:
-            existing_service = Service.query.filter_by(tenant_id=default_tenant.id, code=service_data['code']).first()
+            existing_service = Service.query.filter_by(code=service_data['code']).first()
             if not existing_service:
-                service_data['tenant_id'] = default_tenant.id
                 service = Service(**service_data)
                 db.session.add(service)
         
@@ -3735,7 +3505,6 @@ def init_web_db():
 
 @app.context_processor
 def inject_global_vars():
-    tenant = get_tenant()
     current_branch = None
     if current_user.is_authenticated and 'current_branch_id' in session:
         current_branch = HospitalBranch.query.get(session['current_branch_id'])

@@ -28,15 +28,11 @@ def api_login():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
-    tenant_id = data.get('tenant')
     
-    if not all([username, password, tenant_id]):
+    if not all([username, password]):
         return jsonify({'message': 'Missing required fields'}), 400
     
-    # Set tenant context
-    session['tenant_id'] = tenant_id
-    
-    # Query user with tenant context
+    # Query user
     user = WebUser.query.filter_by(username=username).first()
     
     if user and check_password_hash(user.password_hash, password):
@@ -76,19 +72,6 @@ def api_current_user():
         'role': current_user.role
     })
 
-# Tenant endpoints
-@api_bp.route('/tenants', methods=['GET'])
-def api_tenants():
-    # Import here to avoid circular import
-    from web_app import Tenant
-    
-    tenants = Tenant.query.all()
-    return jsonify([{
-        'id': tenant.id,
-        'name': tenant.name,
-        'code': tenant.tenant_code,
-        'is_active': tenant.is_active
-    } for tenant in tenants])
 
 # Dashboard endpoints
 @api_bp.route('/dashboard', methods=['GET'])
@@ -198,15 +181,13 @@ def api_patients():
 @login_required
 def api_create_patient():
     # Import here to avoid circular import
-    from web_app import WebPatient, db, get_tenant, generate_patient_id
+    from web_app import WebPatient, db, generate_patient_id
     
     try:
         data = request.get_json()
-        tenant = get_tenant()
         
         patient = WebPatient(
-            tenant_id=tenant.id if tenant else None,
-            patient_id=generate_patient_id(tenant.id if tenant else None),
+            patient_id=generate_patient_id(),
             first_name=data.get('first_name'),
             last_name=data.get('last_name'),
             email=data.get('email'),
@@ -335,14 +316,12 @@ def api_appointments():
 @login_required
 def api_create_appointment():
     # Import here to avoid circular import
-    from web_app import WebAppointment, db, get_tenant
+    from web_app import WebAppointment, db
     
     try:
         data = request.get_json()
-        tenant = get_tenant()
         
         appointment = WebAppointment(
-            tenant_id=tenant.id if tenant else None,
             patient_id=data.get('patient_id'),
             doctor_id=data.get('doctor_id'),
             appointment_date=datetime.strptime(data.get('appointment_date'), '%Y-%m-%d %H:%M'),

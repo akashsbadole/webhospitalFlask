@@ -1,52 +1,64 @@
-
 # 🏥 MediCare Pro - Hospital Management System
 
 A comprehensive, multi-tenant Hospital Management System built with Flask, featuring modern web interface, advanced security, and complete healthcare workflow management.
 
+## Screenshot
+
+![medicare](medicare-pro.jpeg "medicare-pro")
+![medicare login](medicare-pro-login.jpeg "medicare-pro-login")
+
 ## 🌟 Features
 
 ### 🔐 Multi-Tenant SaaS Architecture
+
 - **Tenant Management**: Complete multi-tenant support with isolated data
 - **Subscription Plans**: Basic, Professional, and Enterprise tiers
 - **Custom Domains**: Support for custom domains and subdomains
 - **Tenant-specific Settings**: Customizable branding and configurations
 
 ### 👥 User Management & Security
+
 - **Role-based Access Control**: Admin, Doctor, Nurse, Receptionist, Lab Tech, Patient roles
 - **Two-Factor Authentication (2FA)**: Enhanced security with TOTP support
 - **Advanced Security Features**: Login attempt monitoring, IP tracking, session management
 - **Audit Logging**: Comprehensive activity tracking and security event logging
 
 ### 🏥 Core Hospital Management
+
 - **Patient Management**: Complete patient registration, medical history, demographics
 - **Appointment Scheduling**: Advanced booking system with telemedicine support
 - **Electronic Health Records (EHR)**: Digital medical records with version control
 - **Staff Management**: Employee profiles, attendance tracking, shift management
 
 ### 🧪 Clinical Operations
+
 - **Laboratory Management**: Test orders, sample tracking, result management
 - **Radiology/Imaging**: Imaging orders, DICOM support, radiologist reporting
 - **Pharmacy Management**: Medicine inventory, prescription management, dispensing
 - **Prescription System**: Digital prescriptions with drug interaction checking
 
 ### 🏨 Inpatient Management
+
 - **Ward Management**: Bed allocation, occupancy tracking
 - **Admission/Discharge**: Complete inpatient workflow
 - **Nursing Care**: Patient monitoring, vital signs tracking
 
 ### 💰 Financial Management
+
 - **Billing System**: Comprehensive billing with multiple service types
 - **Payment Processing**: Multiple payment methods, installment support
 - **Insurance Claims**: Insurance provider integration and claim processing
 - **Financial Reporting**: Revenue tracking, outstanding payments
 
 ### 📊 Reporting & Analytics
+
 - **Dashboard Analytics**: Real-time KPIs and metrics
 - **Custom Reports**: Patient reports, financial summaries, operational metrics
 - **Data Export/Import**: Excel, CSV, PDF export capabilities
 - **Quality Management**: Performance indicators and quality metrics
 
 ### 🔧 System Features
+
 - **Backup Management**: Automated database backups with scheduling
 - **Notification System**: Email, SMS, WhatsApp notifications
 - **Document Management**: File upload, storage, and retrieval
@@ -54,6 +66,7 @@ A comprehensive, multi-tenant Hospital Management System built with Flask, featu
 - **Inventory Management**: Medical supplies and equipment tracking
 
 ### 🌐 Modern Web Interface
+
 - **Responsive Design**: Mobile-friendly interface
 - **Real-time Updates**: WebSocket support for live data
 - **Progressive Web App**: Offline capability and app-like experience
@@ -63,6 +76,7 @@ A comprehensive, multi-tenant Hospital Management System built with Flask, featu
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Python 3.8+
 - pip (Python package manager)
 - SQLite (included with Python)
@@ -71,38 +85,44 @@ A comprehensive, multi-tenant Hospital Management System built with Flask, featu
 ### Installation
 
 1. **Clone the Repository**
+
    ```bash
    git clone <repository-url>
    cd webhms
    ```
 
 2. **Create Virtual Environment**
+
    ```bash
    python -m venv venv
-   
+
    # Windows
    venv\Scripts\activate
-   
+
    # Linux/Mac
    source venv/bin/activate
    ```
 
 3. **Install Dependencies**
+
    ```bash
    pip install -r requirements_web_app.txt
    ```
 
 4. **Initialize Database**
+
    ```bash
    python create_all_tables.py
    ```
 
 5. **Create User Accounts**
+
    ```bash
    python create_accounts.py
    ```
 
 6. **Run the Application**
+
    ```bash
    python web_app.py
    ```
@@ -114,15 +134,18 @@ A comprehensive, multi-tenant Hospital Management System built with Flask, featu
 ## 🔑 Default Login Credentials
 
 ### ADMIN ACCOUNTS:
+
 - **Username**: `superadmin` | **Password**: `admin123`
 - **Username**: `hradmin` | **Password**: `hr123`
 
 ### DOCTOR ACCOUNTS:
+
 - **Username**: `dr.smith` | **Password**: `doctor123`
 - **Username**: `dr.johnson` | **Password**: `doctor123`
 - **Username**: `dr.williams` | **Password**: `doctor123`
 
 ### STAFF ACCOUNTS:
+
 - **Username**: `nurse.mary` | **Password**: `nurse123`
 - **Username**: `nurse.david` | **Password**: `nurse123`
 - **Username**: `receptionist1` | **Password**: `staff123`
@@ -131,6 +154,7 @@ A comprehensive, multi-tenant Hospital Management System built with Flask, featu
 - **Username**: `lab.tech2` | **Password**: `lab123`
 
 ### PATIENT/CUSTOMER ACCOUNTS:
+
 - **Username**: `patient1` | **Password**: `patient123`
 - **Username**: `patient2` | **Password**: `patient123`
 - **Username**: `patient3` | **Password**: `patient123`
@@ -140,38 +164,46 @@ A comprehensive, multi-tenant Hospital Management System built with Flask, featu
 **Total Users**: 20 accounts across all roles
 
 ### ACCOUNTANTS:
+
 - `accountant` - Robert Miller
 
 ### ADMINS:
+
 - `admin` - System Administrator
 - `hradmin` - HR Administrator
 - `superadmin` - Super Administrator
 
 ### DOCTORS:
+
 - `doctor` - Dr. John Smith
 - `dr.johnson` - Dr. Sarah Johnson
 - `dr.smith` - Dr. John Smith
 - `dr.williams` - Dr. Michael Williams
 
 ### LAB_TECHS:
+
 - `lab.tech1` - Robert Davis
 - `lab.tech2` - Jennifer Garcia
 - `labtech` - David Brown
 
 ### NURSES:
+
 - `nurse` - Sarah Johnson
 - `nurse.david` - David Brown
 - `nurse.mary` - Mary Wilson
 
 ### PATIENTS:
+
 - `patient1` - John Doe
 - `patient2` - Jane Smith
 - `patient3` - Bob Johnson
 
 ### PHARMACISTS:
+
 - `pharmacist` - Lisa Davis
 
 ### RECEPTIONISTS:
+
 - `receptionist` - Mary Wilson
 - `receptionist2` - James Miller
 
@@ -180,6 +212,7 @@ A comprehensive, multi-tenant Hospital Management System built with Flask, featu
 ### Development Deployment
 
 1. **Environment Setup**
+
    ```bash
    # Set environment variables
    export FLASK_ENV=development
@@ -197,11 +230,13 @@ A comprehensive, multi-tenant Hospital Management System built with Flask, featu
 #### Option 1: Using Gunicorn (Recommended)
 
 1. **Install Gunicorn**
+
    ```bash
    pip install gunicorn
    ```
 
 2. **Create Gunicorn Configuration**
+
    ```python
    # gunicorn.conf.py
    bind = "0.0.0.0:8000"
@@ -221,15 +256,16 @@ A comprehensive, multi-tenant Hospital Management System built with Flask, featu
 #### Option 2: Using Docker
 
 1. **Create Dockerfile**
+
    ```dockerfile
    FROM python:3.9-slim
-   
+
    WORKDIR /app
    COPY requirements_web_app.txt .
    RUN pip install -r requirements_web_app.txt
-   
+
    COPY . .
-   
+
    EXPOSE 5000
    CMD ["gunicorn", "--bind", "0.0.0.0:5000", "web_app:app"]
    ```
@@ -243,27 +279,30 @@ A comprehensive, multi-tenant Hospital Management System built with Flask, featu
 #### Option 3: Using Apache/Nginx
 
 1. **Install mod_wsgi (Apache)**
+
    ```bash
    pip install mod_wsgi
    ```
 
 2. **Create WSGI file**
+
    ```python
    # app.wsgi
    import sys
    import os
-   
+
    sys.path.insert(0, '/path/to/your/app')
    from web_app import app as application
    ```
 
 3. **Configure Apache Virtual Host**
+
    ```apache
    <VirtualHost *:80>
        ServerName your-domain.com
        DocumentRoot /path/to/your/app
        WSGIScriptAlias / /path/to/your/app/app.wsgi
-       
+
        <Directory /path/to/your/app>
            WSGIApplicationGroup %{GLOBAL}
            Require all granted
@@ -370,6 +409,7 @@ The system provides RESTful APIs for integration:
 - **Format**: JSON
 
 ### Key Endpoints:
+
 - `GET /api/patients` - List patients
 - `POST /api/appointments` - Create appointment
 - `GET /api/medical-records/{patient_id}` - Get medical records
