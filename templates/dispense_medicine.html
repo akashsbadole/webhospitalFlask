@@ -7,10 +7,53 @@
     <div class="row">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h4>Dispense Medicine</h4>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm me-2" onclick="toggleBarcodeScanner()">
+                            <i class="fas fa-barcode"></i> Scan Barcode
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-sm" onclick="checkDrugInteractions()">
+                            <i class="fas fa-pills"></i> Check Interactions
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="checkDrugDatabase()">
+                            <i class="fas fa-database"></i> Drug Database
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="initiateTelepharmacy()">
+                            <i class="fas fa-video"></i> Telepharmacy
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="checkInventoryLevels()">
+                            <i class="fas fa-boxes"></i> Check Inventory
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
+                    <!-- Barcode Scanner (Hidden by default) -->
+                    <div id="barcode-scanner" class="mb-3" style="display: none;">
+                        <div class="card border-info">
+                            <div class="card-body">
+                                <h6><i class="fas fa-barcode"></i> Medicine Barcode Scanner</h6>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="barcode-input" placeholder="Scan or enter barcode">
+                                    <button class="btn btn-info" onclick="lookupMedicineByBarcode()">Lookup</button>
+                                    <button class="btn btn-outline-secondary" onclick="toggleBarcodeScanner()">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Allergy Alert -->
+                    <div id="allergy-alert" class="alert alert-warning" style="display: none;">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Potential Allergy Alert</h6>
+                        <div id="allergy-details"></div>
+                    </div>
+
+                    <!-- Drug Interaction Alert -->
+                    <div id="interaction-alert" class="alert alert-danger" style="display: none;">
+                        <h6><i class="fas fa-exclamation-circle"></i> Drug Interaction Warning</h6>
+                        <div id="interaction-details"></div>
+                    </div>
+
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h6>Prescription Information</h6>
@@ -19,6 +62,7 @@
                                 prescription.patient.last_name }}</p>
                             <p><strong>Doctor:</strong> {{ prescription.doctor.full_name }}</p>
                             <p><strong>Date:</strong> {{ prescription.prescription_date.strftime('%Y-%m-%d') }}</p>
+                            <p><strong>Status:</strong> <span class="badge bg-{{ 'success' if prescription.status == 'completed' else 'primary' }}">{{ prescription.status.title() if hasattr(prescription.status, 'title') else prescription.status }}</span></p>
                         </div>
                         <div class="col-md-6">
                             <h6>Prescription Details</h6>
@@ -26,8 +70,26 @@
                                 <div class="card-body">
                                     <p><strong>Medications:</strong></p>
                                     <p>{{ prescription.medications }}</p>
-                                    <p><strong>Instructions:</strong></p>
-                                    <p>{{ prescription.instructions }}</p>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <p><strong>Instructions:</strong></p>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="changeLanguage('en')" id="lang-en">
+                                                English
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="changeLanguage('es')" id="lang-es">
+                                                Español
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="changeLanguage('fr')" id="lang-fr">
+                                                Français
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="changeLanguage('zh')" id="lang-zh">
+                                                中文
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="instructions-content">
+                                        <p>{{ prescription.instructions }}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -37,24 +99,58 @@
                         <h6>Dispensing Details</h6>
                         <div id="medicine-items">
                             <div class="row medicine-item mb-3">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label class="form-label">Medicine</label>
                                     <select class="form-select" name="medicine_id" required
                                         onchange="updatePrice(this)">
                                         <option value="">Select Medicine</option>
                                         {% for medicine in medicines %}
-                                        <option value="{{ medicine.id }}" data-price="{{ medicine.selling_price }}"
-                                            data-stock="{{ medicine.stock_quantity }}">
-                                            {{ medicine.name }} - {{ medicine.strength }} (Stock: {{
-                                            medicine.stock_quantity }})
+                                        <option value="{{ medicine.id }}"
+                                            data-price="{{ medicine.selling_price }}"
+                                            data-stock="{{ medicine.stock_quantity }}"
+                                            data-batch="{{ medicine.batch_number or 'N/A' }}"
+                                            data-expiry="{{ medicine.expiry_date.strftime('%Y-%m-%d') if medicine.expiry_date else 'N/A' }}"
+                                            data-category="{{ medicine.category or 'N/A' }}"
+                                            data-generic="{{ medicine.generic_name or 'N/A' }}"
+                                            data-brand="{{ medicine.brand_name or 'N/A' }}">
+                                            {{ medicine.name }} - {{ medicine.strength }} (Stock: {{ medicine.stock_quantity }})
                                         </option>
                                         {% endfor %}
                                     </select>
+                                    <div class="medicine-details mt-2" style="display: none;">
+                                        <small class="text-muted">
+                                            <div>Batch: <span class="batch-number"></span></div>
+                                            <div>Expiry: <span class="expiry-date"></span></div>
+                                            <div>Category: <span class="medicine-category"></span></div>
+                                            <div>Generic: <span class="generic-name"></span></div>
+                                        </small>
+                                    </div>
+                                    <!-- Medicine Substitutions -->
+                                    <div class="substitution-options mt-2" style="display: none;">
+                                        <button type="button" class="btn btn-sm btn-outline-info" onclick="showSubstitutions(this)">
+                                            <i class="fas fa-exchange-alt"></i> Show Alternatives
+                                        </button>
+                                        <div class="substitution-list mt-2" style="display: none;">
+                                            <!-- Substitutions will be populated here -->
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Quantity</label>
                                     <input type="number" class="form-control" name="quantity" min="1" required
                                         onchange="calculateTotal(this)">
+                                    <div class="invalid-feedback">
+                                        Cannot dispense more than available stock.
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Dosage</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="dosage" placeholder="e.g., 1-2 tablets" id="dosage-input">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="toggleDosageCalculator()">
+                                            <i class="fas fa-calculator"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Unit Price</label>
@@ -64,7 +160,7 @@
                                     <label class="form-label">Total</label>
                                     <input type="number" class="form-control total-price" step="0.01" readonly>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-1">
                                     <label class="form-label">&nbsp;</label>
                                     <button type="button" class="btn btn-success w-100" onclick="addMedicineItem()">
                                         <i class="fas fa-plus"></i>
@@ -86,6 +182,34 @@
                                     <input type="number" class="form-control" id="tax_amount" name="tax_amount"
                                         step="0.01" value="0" onchange="calculateFinalTotal()">
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="payment_method" class="form-label">Payment Method</label>
+                                    <select class="form-select" id="payment_method" name="payment_method" onchange="handlePaymentMethodChange(this.value)">
+                                        <option value="cash">Cash</option>
+                                        <option value="card">Card</option>
+                                        <option value="online">Online Payment</option>
+                                        <option value="insurance">Insurance</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Payment Gateway Integration -->
+                                <div id="payment-gateway-section" class="mb-3" style="display: none;">
+                                    <div class="card border-info">
+                                        <div class="card-body p-3">
+                                            <h6 class="card-title mb-2">Payment Processing</h6>
+                                            <div id="payment-options">
+                                                <!-- Payment options will be shown based on selection -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="pharmacist_notes" class="form-label">Pharmacist Notes</label>
+                                    <textarea class="form-control" id="pharmacist_notes" name="pharmacist_notes" rows="3"
+                                        placeholder="Special instructions for patient..."></textarea>
+                                </div>
                             </div>
 
                             <div class="col-md-6">
@@ -99,15 +223,151 @@
                                         <h5><strong>Total:</strong> $<span id="final-total">0.00</span></h5>
                                         <input type="hidden" name="total_amount" id="total_amount">
                                         <input type="hidden" name="final_amount" id="final_amount">
+                                        
+                                        <div class="mt-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="confirm_stock" required>
+                                                <label class="form-check-label" for="confirm_stock">
+                                                    I confirm that all medicines are in stock and have valid expiry dates
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="verify_patient" required>
+                                                <label class="form-check-label" for="verify_patient">
+                                                    I have verified patient identity and allergies
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Patient Signature Section -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="card border-secondary">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">Patient Confirmation</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Patient Name</label>
+                                                    <input type="text" class="form-control" id="patient_name"
+                                                        value="{{ prescription.patient.first_name }} {{ prescription.patient.last_name }}" readonly>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Signature</label>
+                                                    <div class="border rounded p-2 bg-white" style="height: 100px; position: relative;">
+                                                        <canvas id="signature-pad" width="100%" height="100%"></canvas>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-1"
+                                                            onclick="clearSignature()">Clear</button>
+                                                    </div>
+                                                    <input type="hidden" id="signature_data" name="signature_data">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Dispensed By</label>
+                                                    <input type="text" class="form-control" value="{{ current_user.full_name }}" readonly>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Date & Time</label>
+                                                    <input type="text" class="form-control" value="{{ datetime.now().strftime('%Y-%m-%d %H:%M:%S') }}" readonly>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+    <!-- Dosage Calculator Modal -->
+    <div class="modal fade" id="dosage-calculator-modal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-calculator"></i> Dosage Calculator
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Patient Weight (kg)</label>
+                                <input type="number" class="form-control" id="patient-weight" step="0.1" min="1" placeholder="Enter weight">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Age Group</label>
+                                <select class="form-select" id="age-group">
+                                    <option value="">Select age group</option>
+                                    <option value="pediatric">Pediatric (0-12)</option>
+                                    <option value="adolescent">Adolescent (13-17)</option>
+                                    <option value="adult">Adult (18-64)</option>
+                                    <option value="elderly">Elderly (65+)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Medication Strength (mg)</label>
+                                <input type="number" class="form-control" id="medication-strength" placeholder="e.g., 500">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Dosage Form</label>
+                                <select class="form-select" id="dosage-form">
+                                    <option value="tablet">Tablet</option>
+                                    <option value="capsule">Capsule</option>
+                                    <option value="liquid">Liquid</option>
+                                    <option value="injection">Injection</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6>Recommended Dosage</h6>
+                                    <div id="dosage-recommendation">
+                                        <p class="text-muted">Enter patient information to calculate recommended dosage</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <h6><i class="fas fa-info-circle"></i> Dosage Guidelines</h6>
+                        <p class="mb-2">This calculator provides standard dosage recommendations based on patient weight and age. Always consult with a healthcare professional before administering medication.</p>
+                        <ul>
+                            <li>Dosages are calculated using standard medical guidelines</li>
+                            <li>Consider patient's medical history and conditions</li>
+                            <li>Adjust for renal or hepatic impairment if needed</li>
+                            <li>Monitor for adverse reactions</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="calculateDosage()">Calculate Dosage</button>
+                    <button type="button" class="btn btn-success" onclick="applyDosage()" style="display: none;" id="apply-dosage-btn">Apply Dosage</button>
+                </div>
+            </div>
+        </div>
+    </div>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-12">
-                                <button type="submit" class="btn btn-success">
+                                <button type="submit" class="btn btn-success" id="dispense-btn">
                                     <i class="fas fa-pills"></i> Dispense Medicine
+                                </button>
+                                <button type="button" class="btn btn-info" onclick="generateDigitalReceipt('PREVIEW')">
+                                    <i class="fas fa-receipt"></i> Preview Receipt
                                 </button>
                                 <a href="{{ url_for('pharmacy_orders') }}" class="btn btn-secondary">
                                     <i class="fas fa-times"></i> Cancel
@@ -135,6 +395,210 @@
                 </div>
             </div>
 
+            <!-- Patient Education Materials -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>Patient Education</h5>
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="toggleEducationMaterials()">
+                        <i class="fas fa-book-medical"></i>
+                    </button>
+                </div>
+                <div class="card-body" id="education-materials" style="display: none;">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Patient Education Resources</h6>
+                        <p class="mb-2">Provide patients with educational materials about their medications for better adherence and understanding.</p>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Education Type</label>
+                            <select class="form-select" id="education-type" onchange="updateEducationMaterials()">
+                                <option value="">Select education type</option>
+                                <option value="usage">Medication Usage Guide</option>
+                                <option value="side-effects">Side Effects Information</option>
+                                <option value="interactions">Drug Interactions</option>
+                                <option value="storage">Storage Instructions</option>
+                                <option value="lifestyle">Lifestyle Considerations</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Format</label>
+                            <select class="form-select" id="education-format">
+                                <option value="print">Printed Handout</option>
+                                <option value="email">Email to Patient</option>
+                                <option value="sms">SMS Link</option>
+                                <option value="qr">QR Code</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Include Standard Instructions</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="include-standard" checked>
+                            <label class="form-check-label" for="include-standard">
+                                Include standard dosage and timing instructions
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="education-notes" rows="3"
+                                  placeholder="Special instructions for this patient..."></textarea>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" onclick="generateEducationMaterials()">
+                        <i class="fas fa-file-medical"></i> Generate Materials
+                    </button>
+                </div>
+            </div>
+            <!-- Medication Adherence Tracking -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>Medication Adherence</h5>
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="toggleAdherenceTracking()">
+                        <i class="fas fa-chart-line"></i>
+                    </button>
+                </div>
+                <div class="card-body" id="adherence-tracking" style="display: none;">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Adherence Monitoring</h6>
+                        <p>Track patient medication adherence to improve health outcomes and reduce complications.</p>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Tracking Period</label>
+                            <select class="form-select" id="tracking-period">
+                                <option value="7">Last 7 days</option>
+                                <option value="14" selected>Last 14 days</option>
+                                <option value="30">Last 30 days</option>
+                                <option value="90">Last 90 days</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Reminder Method</label>
+                            <select class="form-select" id="adherence-reminder">
+                                <option value="sms">SMS Reminder</option>
+                                <option value="email" selected>Email Reminder</option>
+                                <option value="app">Mobile App Notification</option>
+                                <option value="phone">Phone Call</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Adherence Notes</label>
+                        <textarea class="form-control" id="adherence-notes" rows="3" 
+                                  placeholder="Special adherence notes..."></textarea>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" onclick="saveAdherenceSettings()">
+                        <i class="fas fa-save"></i> Save Adherence Settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- Patient Medication History -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>Medication History</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleMedicationHistory()">
+                        <i class="fas fa-history"></i>
+                    </button>
+                </div>
+                <div class="card-body" id="medication-history" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Medicine</th>
+                                    <th>Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Medication history will be populated here -->
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batch & Expiry Management -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Batch & Expiry Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" id="expiry-alert" style="display: none;">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Expiry Warning</h6>
+                        <div id="expiry-details"></div>
+                    </div>
+                    <div id="batch-info" class="mt-2">
+                        <!-- Batch information will be displayed here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Automated Refill Reminders -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Refill Reminders</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleRefillSection()">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                </div>
+                <div class="card-body" id="refill-section" style="display: none;">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Automated Refill Service</h6>
+                        <p class="mb-2">Set up automated reminders for patients to refill their prescriptions before they run out.</p>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Days Before Expiry</label>
+                            <select class="form-select" id="refill-reminder-days">
+                                <option value="7">7 days</option>
+                                <option value="14" selected>14 days</option>
+                                <option value="30">30 days</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Reminder Method</label>
+                            <select class="form-select" id="reminder-method">
+                                <option value="sms">SMS</option>
+                                <option value="email" selected>Email</option>
+                                <option value="both">Both</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="refill-notes" rows="2"
+                                  placeholder="Special instructions for refill reminders..."></textarea>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="auto-refill" checked>
+                        <label class="form-check-label" for="auto-refill">
+                            Enable automatic refill processing when patient confirms
+                        </label>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" onclick="saveRefillReminder()">
+                        <i class="fas fa-save"></i> Save Refill Settings
+                    </button>
+                </div>
+            </div>
+
             <div class="card mt-3">
                 <div class="card-header">
                     <h5>Dispensing Notes</h5>
@@ -152,19 +616,69 @@
     </div>
 </div>
 
-<script>
+    // Medicine data for interaction checking
+    const medicineInteractions = {
+        // Common drug interactions (simplified for demo)
+        'Aspirin': ['Warfarin', 'Ibuprofen', 'Heparin'],
+        'Warfarin': ['Aspirin', 'Ibuprofen', 'NSAIDs'],
+        'Ibuprofen': ['Aspirin', 'Warfarin', 'Lithium'],
+        'Metformin': ['Cimetidine', 'Furosemide', 'Nifedipine'],
+        'Omeprazole': ['Ketoconazole', 'Itraconazole', 'Voriconazole'],
+        'Amoxicillin': ['Allopurinol', 'Methotrexate'],
+        'Lisinopril': ['Potassium supplements', 'NSAIDs']
+    };
+
+    // Patient allergies (in real app, this would come from database)
+    const patientAllergies = "{{ prescription.patient.allergies or '' }}".toLowerCase().split(',').map(a => a.trim());
+
     function updatePrice(selectElement) {
         const row = selectElement.closest('.medicine-item');
         const selectedOption = selectElement.options[selectElement.selectedIndex];
         const unitPriceInput = row.querySelector('input[name="unit_price"]');
+        const medicineDetailsDiv = row.querySelector('.medicine-details');
+        const substitutionOptionsDiv = row.querySelector('.substitution-options');
 
         if (selectedOption.value) {
             const price = selectedOption.getAttribute('data-price');
+            const stock = parseInt(selectedOption.getAttribute('data-stock'));
+            const batch = selectedOption.getAttribute('data-batch');
+            const expiry = selectedOption.getAttribute('data-expiry');
+            const category = selectedOption.getAttribute('data-category');
+            const generic = selectedOption.getAttribute('data-generic');
+            const brand = selectedOption.getAttribute('data-brand');
+            const medicineName = selectedOption.text.split(' - ')[0];
+            
             unitPriceInput.value = price;
-            calculateTotal(row.querySelector('input[name="quantity"]'));
+            
+            // Show medicine details
+            row.querySelector('.batch-number').textContent = batch;
+            row.querySelector('.expiry-date').textContent = expiry;
+            row.querySelector('.medicine-category').textContent = category;
+            row.querySelector('.generic-name').textContent = generic;
+            medicineDetailsDiv.style.display = 'block';
+            
+            // Show substitution options
+            substitutionOptionsDiv.style.display = 'block';
+            
+            // Check if quantity exceeds stock
+            const quantityInput = row.querySelector('input[name="quantity"]');
+            quantityInput.max = stock;
+            
+            // Check for allergies
+            checkForAllergies(medicineName, row);
+            
+            // Check expiry dates
+            checkExpiryDate(expiry, medicineName);
+            
+            // Update batch information
+            updateBatchInfo(batch, expiry, medicineName);
+            
+            calculateTotal(quantityInput);
         } else {
             unitPriceInput.value = '';
             row.querySelector('.total-price').value = '';
+            medicineDetailsDiv.style.display = 'none';
+            substitutionOptionsDiv.style.display = 'none';
         }
     }
 
@@ -173,6 +687,17 @@
         const unitPrice = parseFloat(row.querySelector('input[name="unit_price"]').value) || 0;
         const quantity = parseInt(quantityInput.value) || 0;
         const totalPriceInput = row.querySelector('.total-price');
+        const maxStock = parseInt(quantityInput.max) || 999;
+
+        // Validate stock
+        if (quantity > maxStock) {
+            quantityInput.setCustomValidity('Cannot dispense more than available stock.');
+            quantityInput.reportValidity();
+            quantityInput.value = maxStock;
+            return;
+        } else {
+            quantityInput.setCustomValidity('');
+        }
 
         const total = unitPrice * quantity;
         totalPriceInput.value = total.toFixed(2);
@@ -210,6 +735,7 @@
         newItem.querySelectorAll('input, select').forEach(input => {
             input.value = '';
         });
+        newItem.querySelector('.medicine-details').style.display = 'none';
 
         // Change add button to remove button
         const button = newItem.querySelector('button');
@@ -224,6 +750,1596 @@
         const item = button.closest('.medicine-item');
         item.remove();
         calculateFinalTotal();
+        checkDrugInteractions(); // Re-check interactions after removing
     }
-</script>
+
+    function checkForAllergies(medicineName) {
+        const medicineNameLower = medicineName.toLowerCase();
+        const hasAllergy = patientAllergies.some(allergy => 
+            medicineNameLower.includes(allergy) || allergy.includes(medicineNameLower)
+        );
+
+        if (hasAllergy) {
+            showAllergyAlert(medicineName);
+        } else {
+            hideAllergyAlert();
+        }
+    }
+
+    function showAllergyAlert(medicineName) {
+        const alertDiv = document.getElementById('allergy-alert');
+        const detailsDiv = document.getElementById('allergy-details');
+        
+        alertDiv.style.display = 'block';
+        detailsDiv.innerHTML = `
+            <p><strong>Warning:</strong> Patient has documented allergies that may be related to <strong>${medicineName}</strong>.</p>
+            <p>Please verify with the patient before dispensing.</p>
+        `;
+    }
+
+    function hideAllergyAlert() {
+        document.getElementById('allergy-alert').style.display = 'none';
+    }
+
+    function checkDrugInteractions() {
+        const selectedMedicines = [];
+        document.querySelectorAll('select[name="medicine_id"]').forEach(select => {
+            if (select.value) {
+                const medicineName = select.options[select.selectedIndex].text.split(' - ')[0];
+                selectedMedicines.push(medicineName);
+            }
+        });
+
+        if (selectedMedicines.length < 2) {
+            hideInteractionAlert();
+            return;
+        }
+
+        const interactions = [];
+        for (let i = 0; i < selectedMedicines.length; i++) {
+            const medicine = selectedMedicines[i];
+            const interactionsForMedicine = medicineInteractions[medicine] || [];
+            
+            for (let j = 0; j < interactionsForMedicine.length; j++) {
+                const interactingMedicine = interactionsForMedicine[j];
+                if (selectedMedicines.includes(interactingMedicine) && interactingMedicine !== medicine) {
+                    interactions.push({
+                        medicine: medicine,
+                        interacts_with: interactingMedicine
+                    });
+                }
+            }
+        }
+
+        if (interactions.length > 0) {
+            showInteractionAlert(interactions);
+        } else {
+            hideInteractionAlert();
+        }
+    }
+
+    function showInteractionAlert(interactions) {
+        const alertDiv = document.getElementById('interaction-alert');
+        const detailsDiv = document.getElementById('interaction-details');
+        
+        alertDiv.style.display = 'block';
+        
+        let interactionsHtml = '<ul>';
+        interactions.forEach(interaction => {
+            interactionsHtml += `<li><strong>${interaction.medicine}</strong> interacts with <strong>${interaction.interacts_with}</strong></li>`;
+        });
+        interactionsHtml += '</ul>';
+        
+        detailsDiv.innerHTML = `
+            <p><strong>Drug Interactions Detected:</strong></p>
+            ${interactionsHtml}
+            <p class="mt-2"><strong>Recommendation:</strong> Please review these interactions before dispensing.</p>
+        `;
+    }
+
+    function hideInteractionAlert() {
+        document.getElementById('interaction-alert').style.display = 'none';
+    }
+
+    function toggleBarcodeScanner() {
+        const scanner = document.getElementById('barcode-scanner');
+        scanner.style.display = scanner.style.display === 'none' ? 'block' : 'none';
+        if (scanner.style.display === 'block') {
+            document.getElementById('barcode-input').focus();
+        }
+    }
+
+    function lookupMedicineByBarcode() {
+        const barcode = document.getElementById('barcode-input').value;
+        if (!barcode) return;
+
+        // In a real implementation, this would look up the barcode in the database
+        // For demo, we'll simulate finding a medicine by barcode
+        const medicineSelect = document.querySelector('select[name="medicine_id"]');
+        
+        // Try to find medicine with matching batch number (simplified barcode lookup)
+        for (let i = 0; i < medicineSelect.options.length; i++) {
+            const option = medicineSelect.options[i];
+            const batchNumber = option.getAttribute('data-batch');
+            
+            if (batchNumber && batchNumber.toLowerCase().includes(barcode.toLowerCase())) {
+                medicineSelect.selectedIndex = i;
+                updatePrice(medicineSelect);
+                toggleBarcodeScanner();
+                return;
+            }
+        }
+        
+        alert('Medicine with this barcode not found');
+    }
+
+    // Signature pad functionality
+    let isDrawing = false;
+    let signaturePad;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const canvas = document.getElementById('signature-pad');
+        if (canvas) {
+            signaturePad = canvas.getContext('2d');
+            
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Touch events for mobile
+            canvas.addEventListener('touchstart', handleTouch);
+            canvas.addEventListener('touchmove', handleTouch);
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+    });
+
+    function startDrawing(e) {
+        isDrawing = true;
+        const rect = e.target.getBoundingClientRect();
+        signaturePad.beginPath();
+        signaturePad.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        const rect = e.target.getBoundingClientRect();
+        signaturePad.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        signaturePad.stroke();
+    }
+
+    function stopDrawing() {
+        if (isDrawing) {
+            isDrawing = false;
+            saveSignature();
+        }
+    }
+
+    function handleTouch(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
+                                     e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        e.target.dispatchEvent(mouseEvent);
+    }
+
+    function saveSignature() {
+        const canvas = document.getElementById('signature-pad');
+        const signatureData = canvas.toDataURL();
+        document.getElementById('signature_data').value = signatureData;
+    }
+
+    function clearSignature() {
+        const canvas = document.getElementById('signature-pad');
+        signaturePad.clearRect(0, 0, canvas.width, canvas.height);
+        document.getElementById('signature_data').value = '';
+    }
+
+    // Form validation before submission
+    document.getElementById('dispenseForm').addEventListener('submit', function(e) {
+        // Check if signature is provided
+        const signatureData = document.getElementById('signature_data').value;
+        if (!signatureData) {
+            alert('Patient signature is required');
+            e.preventDefault();
+            return;
+        }
+        
+        // Check confirmations
+        if (!document.getElementById('confirm_stock').checked) {
+            alert('Please confirm stock and expiry dates');
+            e.preventDefault();
+            return;
+        }
+        
+        if (!document.getElementById('verify_patient').checked) {
+            alert('Please confirm patient identity and allergies');
+            e.preventDefault();
+            return;
+        }
+        
+        // Disable submit button to prevent double submission
+        const submitBtn = document.getElementById('dispense-btn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    });
+
+    // Medicine Substitution Functions
+    function showSubstitutions(button) {
+        const row = button.closest('.medicine-item');
+        const medicineSelect = row.querySelector('select[name="medicine_id"]');
+        const selectedOption = medicineSelect.options[medicineSelect.selectedIndex];
+        const medicineName = selectedOption.text.split(' - ')[0];
+        const genericName = selectedOption.getAttribute('data-generic');
+        const substitutionList = row.querySelector('.substitution-list');
+        
+        if (substitutionList.style.display === 'none') {
+            // Find alternatives with same generic name
+            const alternatives = [];
+            for (let i = 0; i < medicineSelect.options.length; i++) {
+                const option = medicineSelect.options[i];
+                if (option.value && option.getAttribute('data-generic') === genericName &&
+                    option.text !== selectedOption.text) {
+                    alternatives.push({
+                        id: option.value,
+                        name: option.text.split(' - ')[0],
+                        price: option.getAttribute('data-price'),
+                        stock: option.getAttribute('data-stock'),
+                        brand: option.getAttribute('data-brand')
+                    });
+                }
+            }
+            
+            if (alternatives.length > 0) {
+                let alternativesHtml = '<small class="text-muted"><strong>Generic Alternatives:</strong></small><br>';
+                alternatives.forEach(alt => {
+                    alternativesHtml += `
+                        <div class="border rounded p-2 mt-1 cursor-pointer substitution-item"
+                             onclick="selectSubstitution(this, '${alt.id}', '${alt.name}', '${alt.price}', '${alt.stock}')"
+                             style="cursor: pointer;">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>${alt.name}</strong><br>
+                                    <small class="text-muted">Brand: ${alt.brand} | Stock: ${alt.stock}</small>
+                                </div>
+                                <div class="text-end">
+                                    <strong>$${alt.price}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                substitutionList.innerHTML = alternativesHtml;
+            } else {
+                substitutionList.innerHTML = '<small class="text-muted">No alternatives available</small>';
+            }
+            
+            substitutionList.style.display = 'block';
+            button.innerHTML = '<i class="fas fa-times"></i> Hide Alternatives';
+        } else {
+            substitutionList.style.display = 'none';
+            button.innerHTML = '<i class="fas fa-exchange-alt"></i> Show Alternatives';
+        }
+    }
+
+    function selectSubstitution(element, medicineId, medicineName, price, stock) {
+        const row = element.closest('.medicine-item');
+        const medicineSelect = row.querySelector('select[name="medicine_id"]');
+        
+        // Find and select the alternative
+        for (let i = 0; i < medicineSelect.options.length; i++) {
+            if (medicineSelect.options[i].value === medicineId) {
+                medicineSelect.selectedIndex = i;
+                updatePrice(medicineSelect);
+                break;
+            }
+        }
+        
+        // Hide substitution list
+        const substitutionList = row.querySelector('.substitution-list');
+        const button = row.querySelector('.substitution-options button');
+        substitutionList.style.display = 'none';
+        button.innerHTML = '<i class="fas fa-exchange-alt"></i> Show Alternatives';
+    }
+
+    // Batch & Expiry Management Functions
+    function checkExpiryDate(expiryDate, medicineName) {
+        if (expiryDate === 'N/A') return;
+        
+        const expiry = new Date(expiryDate);
+        const today = new Date();
+        const threeMonthsFromNow = new Date();
+        threeMonthsFromNow.setMonth(today.getMonth() + 3);
+        
+        const expiryAlert = document.getElementById('expiry-alert');
+        const expiryDetails = document.getElementById('expiry-details');
+        
+        if (expiry < today) {
+            // Already expired
+            expiryAlert.className = 'alert alert-danger';
+            expiryAlert.style.display = 'block';
+            expiryDetails.innerHTML = `
+                <p><strong>${medicineName}</strong> has expired on ${expiryDate}.</p>
+                <p>Please remove this medicine from inventory.</p>
+            `;
+        } else if (expiry < threeMonthsFromNow) {
+            // Expiring soon
+            expiryAlert.className = 'alert alert-warning';
+            expiryAlert.style.display = 'block';
+            expiryDetails.innerHTML = `
+                <p><strong>${medicineName}</strong> will expire on ${expiryDate}.</p>
+                <p>Please use this medicine before expiry or consider returning to supplier.</p>
+            `;
+        } else {
+            expiryAlert.style.display = 'none';
+        }
+    }
+
+    function updateBatchInfo(batchNumber, expiryDate, medicineName) {
+        const batchInfoDiv = document.getElementById('batch-info');
+        
+        if (batchNumber !== 'N/A') {
+            batchInfoDiv.innerHTML = `
+                <div class="card border-info">
+                    <div class="card-body p-2">
+                        <h6 class="card-title mb-1">Current Selection</h6>
+                        <p class="mb-1"><strong>Medicine:</strong> ${medicineName}</p>
+                        <p class="mb-1"><strong>Batch:</strong> ${batchNumber}</p>
+                        <p class="mb-0"><strong>Expiry:</strong> ${expiryDate}</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // Patient Medication History Functions
+    function toggleMedicationHistory() {
+        const historyDiv = document.getElementById('medication-history');
+        if (historyDiv.style.display === 'none') {
+            historyDiv.style.display = 'block';
+            loadMedicationHistory();
+        } else {
+            historyDiv.style.display = 'none';
+        }
+    }
+
+    function loadMedicationHistory() {
+        // In a real implementation, this would fetch from the server
+        const patientId = "{{ prescription.patient.id }}";
+        
+        // Simulate loading medication history
+        setTimeout(() => {
+            const historyData = [
+                { date: '2023-10-15', medicine: 'Amoxicillin 500mg', quantity: 20 },
+                { date: '2023-09-28', medicine: 'Ibuprofen 400mg', quantity: 30 },
+                { date: '2023-08-10', medicine: 'Paracetamol 500mg', quantity: 25 }
+            ];
+            
+            const tbody = document.querySelector('#medication-history tbody');
+            tbody.innerHTML = '';
+            
+            if (historyData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="text-center text-muted">No medication history available</td>
+                    </tr>
+                `;
+            } else {
+                historyData.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${item.date}</td>
+                            <td>${item.medicine}</td>
+                            <td>${item.quantity}</td>
+                        </tr>
+                    `;
+                });
+            }
+        }, 1000);
+    }
+
+    // Digital Receipt Generation
+    function generateDigitalReceipt(orderId) {
+        // In a real implementation, this would generate a PDF receipt
+        const receiptData = {
+            orderId: orderId,
+            patientName: "{{ prescription.patient.first_name }} {{ prescription.patient.last_name }}",
+            patientId: "{{ prescription.patient.patient_id }}",
+            date: new Date().toLocaleDateString(),
+            items: [],
+            subtotal: document.getElementById('subtotal').textContent,
+            discount: document.getElementById('discount-amount').textContent,
+            tax: document.getElementById('tax-display').textContent,
+            total: document.getElementById('final-total').textContent
+        };
+        
+        // Collect medicine items
+        document.querySelectorAll('.medicine-item').forEach(item => {
+            const medicineSelect = item.querySelector('select[name="medicine_id"]');
+            if (medicineSelect.value) {
+                const medicineName = medicineSelect.options[medicineSelect.selectedIndex].text.split(' - ')[0];
+                const quantity = item.querySelector('input[name="quantity"]').value;
+                const unitPrice = item.querySelector('input[name="unit_price"]').value;
+                const totalPrice = item.querySelector('.total-price').value;
+                
+                receiptData.items.push({
+                    medicine: medicineName,
+                    quantity: quantity,
+                    unitPrice: unitPrice,
+                    totalPrice: totalPrice
+                });
+            }
+        });
+        
+        // Create receipt HTML (in a real app, this would be sent to server for PDF generation)
+        const receiptHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="text-align: center; margin-bottom: 30px;">MediCare Pro - Pharmacy Receipt</h2>
+                <div style="margin-bottom: 20px;">
+                    <p><strong>Order ID:</strong> ${receiptData.orderId}</p>
+                    <p><strong>Date:</strong> ${receiptData.date}</p>
+                    <p><strong>Patient:</strong> ${receiptData.patientName} (${receiptData.patientId})</p>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <thead>
+                        <tr style="background-color: #f5f5f5;">
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Medicine</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Qty</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Unit Price</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${receiptData.items.map(item => `
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd;">${item.medicine}</td>
+                                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+                                <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">$${item.unitPrice}</td>
+                                <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">$${item.totalPrice}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div style="text-align: right; margin-bottom: 20px;">
+                    <p><strong>Subtotal:</strong> $${receiptData.subtotal}</p>
+                    <p><strong>Discount:</strong> $${receiptData.discount}</p>
+                    <p><strong>Tax:</strong> $${receiptData.tax}</p>
+                    <p style="font-size: 18px;"><strong>Total:</strong> $${receiptData.total}</p>
+                </div>
+                <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #666;">
+                    <p>Thank you for choosing MediCare Pro Pharmacy</p>
+                    <p>This receipt is automatically generated and does not require a signature</p>
+                </div>
+            </div>
+        `;
+        
+        // Open receipt in new window for printing
+        const receiptWindow = window.open('', '_blank');
+        receiptWindow.document.write(receiptHtml);
+        receiptWindow.document.close();
+        receiptWindow.print();
+    }
+
+    // Payment Gateway Integration
+    function processPayment(paymentMethod) {
+        const totalAmount = document.getElementById('final_amount').value;
+        
+        if (paymentMethod === 'online') {
+            // In a real implementation, this would integrate with a payment gateway
+            // For demo, we'll show a modal
+            const paymentModal = document.createElement('div');
+            paymentModal.className = 'modal fade';
+            paymentModal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Online Payment</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p><strong>Amount to Pay:</strong> $${totalAmount}</p>
+                            <div class="mb-3">
+                                <label class="form-label">Card Number</label>
+                                <input type="text" class="form-control" placeholder="1234 5678 9012 3456">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Expiry Date</label>
+                                    <input type="text" class="form-control" placeholder="MM/YY">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">CVV</label>
+                                    <input type="text" class="form-control" placeholder="123">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-success" onclick="confirmPayment()">Pay $${totalAmount}</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(paymentModal);
+            
+            // Show modal (requires Bootstrap)
+            const modal = new bootstrap.Modal(paymentModal);
+            modal.show();
+        } else if (paymentMethod === 'insurance') {
+            // Show insurance claim form
+            const insuranceModal = document.createElement('div');
+            insuranceModal.className = 'modal fade';
+            insuranceModal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Insurance Claim</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p><strong>Amount to Claim:</strong> $${totalAmount}</p>
+                            <div class="mb-3">
+                                <label class="form-label">Insurance Provider</label>
+                                <select class="form-select">
+                                    <option>Select Insurance Provider</option>
+                                    <option>Blue Cross Blue Shield</option>
+                                    <option>Aetna</option>
+                                    <option>United Healthcare</option>
+                                    <option>Medicare</option>
+                                    <option>Medicaid</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Policy Number</label>
+                                <input type="text" class="form-control" placeholder="Enter policy number">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Member ID</label>
+                                <input type="text" class="form-control" placeholder="Enter member ID">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-success" onclick="confirmInsuranceClaim()">Submit Claim</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(insuranceModal);
+            
+            // Show modal (requires Bootstrap)
+            const modal = new bootstrap.Modal(insuranceModal);
+            modal.show();
+        }
+    }
+
+    function confirmPayment() {
+        // In a real implementation, this would process the payment
+        alert('Payment processed successfully!');
+        bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
+        generateDigitalReceipt('ORD-' + Date.now());
+    }
+
+    function confirmInsuranceClaim() {
+        // In a real implementation, this would submit the insurance claim
+        alert('Insurance claim submitted successfully!');
+        bootstrap.Modal.getInstance(document.querySelector('.modal')).hide();
+        generateDigitalReceipt('ORD-' + Date.now());
+    }
 {% endblock %}
+    // Payment Method Handler
+    function handlePaymentMethodChange(paymentMethod) {
+        const paymentSection = document.getElementById('payment-gateway-section');
+        const paymentOptions = document.getElementById('payment-options');
+        
+        if (paymentMethod === 'online' || paymentMethod === 'insurance') {
+            paymentSection.style.display = 'block';
+            
+            if (paymentMethod === 'online') {
+                paymentOptions.innerHTML = `
+                    <p>Process payment securely through our payment gateway</p>
+                    <button type="button" class="btn btn-primary" onclick="processPayment('online')">
+                        <i class="fas fa-credit-card"></i> Process Online Payment
+                    </button>
+                `;
+            } else if (paymentMethod === 'insurance') {
+                paymentOptions.innerHTML = `
+                    <p>Submit insurance claim for this prescription</p>
+                    <button type="button" class="btn btn-success" onclick="processPayment('insurance')">
+                        <i class="fas fa-file-invoice"></i> Submit Insurance Claim
+                    </button>
+                `;
+            }
+        } else {
+            paymentSection.style.display = 'none';
+        }
+    }
+    // Refill Reminder Functions
+    function toggleRefillSection() {
+        const refillSection = document.getElementById('refill-section');
+        refillSection.style.display = refillSection.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function saveRefillReminder() {
+        const reminderDays = document.getElementById('refill-reminder-days').value;
+        const reminderMethod = document.getElementById('reminder-method').value;
+        const refillNotes = document.getElementById('refill-notes').value;
+        const autoRefill = document.getElementById('auto-refill').checked;
+        
+        // In a real implementation, this would save to database
+        const refillData = {
+            patientId: "{{ prescription.patient.id }}",
+            prescriptionId: "{{ prescription.id }}",
+            reminderDays: reminderDays,
+            reminderMethod: reminderMethod,
+            notes: refillNotes,
+            autoRefill: autoRefill,
+            medicines: []
+        };
+        
+        // Collect medicine data
+        document.querySelectorAll('.medicine-item').forEach(item => {
+            const medicineSelect = item.querySelector('select[name="medicine_id"]');
+            if (medicineSelect.value) {
+                const medicineName = medicineSelect.options[medicineSelect.selectedIndex].text.split(' - ')[0];
+                const quantity = item.querySelector('input[name="quantity"]').value;
+                refillData.medicines.push({
+                    name: medicineName,
+                    quantity: quantity,
+                    refillDate: calculateRefillDate(quantity)
+                });
+            }
+        });
+        
+        // Show success message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <strong>Success!</strong> Refill reminder has been set up for patient.
+        `;
+        
+        // Insert alert after the refill section
+        const refillSection = document.getElementById('refill-section');
+        refillSection.parentNode.insertBefore(alertDiv, refillSection.nextSibling);
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+        
+        console.log('Refill reminder data:', refillData);
+    }
+
+    function calculateRefillDate(currentQuantity) {
+        // Calculate estimated refill date based on current quantity
+        const dailyDosage = 1; // Default daily dosage
+        const daysRemaining = currentQuantity * dailyDosage;
+        const refillDate = new Date();
+        refillDate.setDate(refillDate.getDate() + daysRemaining);
+        return refillDate.toISOString().split('T')[0];
+    }
+
+    function scheduleRefillReminders() {
+        // In a real implementation, this would set up actual reminders
+        const reminderMethod = document.getElementById('reminder-method').value;
+        const reminderDays = document.getElementById('refill-reminder-days').value;
+        
+        console.log(`Scheduling ${reminderMethod} reminders ${reminderDays} days before expiry`);
+        
+        // Show confirmation
+        const confirmationDiv = document.createElement('div');
+        confirmationDiv.className = 'alert alert-info alert-dismissible fade show';
+        confirmationDiv.innerHTML = `
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <strong>Reminder Scheduled!</strong> Patient will receive ${reminderMethod} reminders ${reminderDays} days before medicine expiry.
+        `;
+        
+        const refillSection = document.getElementById('refill-section');
+        refillSection.parentNode.insertBefore(confirmationDiv, refillSection.nextSibling);
+        
+        setTimeout(() => {
+            confirmationDiv.remove();
+        }, 3000);
+    }
+    // Dosage Calculator Functions
+    function toggleDosageCalculator() {
+        const modal = new bootstrap.Modal(document.getElementById('dosage-calculator-modal'));
+        modal.show();
+    }
+
+    function calculateDosage() {
+        const weight = parseFloat(document.getElementById('patient-weight').value);
+        const ageGroup = document.getElementById('age-group').value;
+        const strength = parseFloat(document.getElementById('medication-strength').value);
+        const dosageForm = document.getElementById('dosage-form').value;
+        
+        if (!weight || !ageGroup || !strength) {
+            alert('Please fill in all patient information');
+            return;
+        }
+        
+        // Calculate recommended dosage based on weight and age
+        let recommendedDosage = 0;
+        let dosageFrequency = '';
+        let maxDailyDose = 0;
+        
+        // Standard dosage calculations (simplified for demo)
+        if (ageGroup === 'pediatric') {
+            // Pediatric calculation: mg/kg/day
+            recommendedDosage = (weight * 10).toFixed(1); // 10mg/kg/day
+            dosageFrequency = '2-3 times daily';
+            maxDailyDose = weight * 15; // Max 15mg/kg/day
+        } else if (ageGroup === 'adolescent') {
+            // Adolescent calculation
+            recommendedDosage = (weight * 8).toFixed(1); // 8mg/kg/day
+            dosageFrequency = '2 times daily';
+            maxDailyDose = weight * 12; // Max 12mg/kg/day
+        } else if (ageGroup === 'adult') {
+            // Adult calculation
+            recommendedDosage = (weight * 5).toFixed(1); // 5mg/kg/day
+            dosageFrequency = '1-2 times daily';
+            maxDailyDose = weight * 10; // Max 10mg/kg/day
+        } else if (ageGroup === 'elderly') {
+            // Elderly calculation (reduced dosage)
+            recommendedDosage = (weight * 4).toFixed(1); // 4mg/kg/day
+            dosageFrequency = '1-2 times daily';
+            maxDailyDose = weight * 8; // Max 8mg/kg/day
+        }
+        
+        // Adjust for dosage form
+        let formMultiplier = 1;
+        if (dosageForm === 'liquid') {
+            formMultiplier = 0.8; // Liquid has better absorption
+        } else if (dosageForm === 'capsule') {
+            formMultiplier = 1.1; // Capsules may have slightly different absorption
+        }
+        
+        recommendedDosage = (parseFloat(recommendedDosage) * formMultiplier).toFixed(1);
+        
+        // Calculate number of tablets/capsules
+        const tabletsPerDose = (strength > 0) ? (recommendedDosage / strength).toFixed(1) : 'N/A';
+        
+        // Display recommendation
+        const recommendationDiv = document.getElementById('dosage-recommendation');
+        recommendationDiv.innerHTML = `
+            <div class="alert alert-success">
+                <h6><i class="fas fa-check-circle"></i> Recommended Dosage</h6>
+                <p><strong>Recommended Dose:</strong> ${recommendedDosage}mg</p>
+                <p><strong>Frequency:</strong> ${dosageFrequency}</p>
+                <p><strong>Tablets per Dose:</strong> ${tabletsPerDose}</p>
+                <p><strong>Maximum Daily Dose:</strong> ${maxDailyDose.toFixed(1)}mg</p>
+                <hr>
+                <p class="mb-0"><strong>Note:</strong> This is a general recommendation. Always consider patient's specific medical conditions and consult with healthcare provider.</p>
+            </div>
+        `;
+        
+        // Show apply button
+        document.getElementById('apply-dosage-btn').style.display = 'inline-block';
+    }
+
+    function applyDosage() {
+        const recommendationDiv = document.getElementById('dosage-recommendation');
+        const dosageText = recommendationDiv.querySelector('p strong').textContent;
+        
+        // Find the current dosage input field (first medicine item)
+        const dosageInput = document.querySelector('input[name="dosage"]');
+        if (dosageInput) {
+            dosageInput.value = dosageText.replace('Recommended Dose: ', '').replace('mg', '');
+            
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <strong>Success!</strong> Recommended dosage has been applied.
+            `;
+            
+            dosageInput.parentNode.insertBefore(alertDiv, dosageInput.nextSibling);
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        }
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('dosage-calculator-modal'));
+        modal.hide();
+    }
+    // Inventory Management Functions
+    function checkInventoryLevels() {
+        // In a real implementation, this would check current inventory levels
+        const inventoryData = [
+            { name: 'Amoxicillin 500mg', currentStock: 45, minStock: 20, reorderLevel: 25, lastReorder: '2023-10-15' },
+            { name: 'Ibuprofen 400mg', currentStock: 120, minStock: 50, reorderLevel: 75, lastReorder: '2023-09-20' },
+            { name: 'Paracetamol 500mg', currentStock: 8, minStock: 30, reorderLevel: 40, lastReorder: '2023-11-05' },
+            { name: 'Lisinopril 10mg', currentStock: 15, minStock: 10, reorderLevel: 20, lastReorder: '2023-08-12' }
+        ];
+        
+        // Create inventory status modal
+        const inventoryModal = document.createElement('div');
+        inventoryModal.className = 'modal fade';
+        inventoryModal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-boxes"></i> Inventory Status & Auto-Reorder
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Medicine</th>
+                                        <th>Current Stock</th>
+                                        <th>Min Stock Level</th>
+                                        <th>Reorder Level</th>
+                                        <th>Status</th>
+                                        <th>Last Reorder</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${inventoryData.map(item => `
+                                        <tr class="${item.currentStock <= item.minStock ? 'table-danger' : item.currentStock <= item.reorderLevel ? 'table-warning' : ''}">
+                                            <td><strong>${item.name}</strong></td>
+                                            <td>${item.currentStock}</td>
+                                            <td>${item.minStock}</td>
+                                            <td>${item.reorderLevel}</td>
+                                            <td>
+                                                <span class="badge bg-${item.currentStock <= item.minStock ? 'danger' : item.currentStock <= item.reorderLevel ? 'warning' : 'success'}">
+                                                    ${item.currentStock <= item.minStock ? 'Critical' : item.currentStock <= item.reorderLevel ? 'Low' : 'Adequate'}
+                                                </span>
+                                            </td>
+                                            <td>${item.lastReorder}</td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="reorderMedicine('${item.name}')">
+                                                    <i class="fas fa-cart-plus"></i> Reorder
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3">
+                            <h6><i class="fas fa-info-circle"></i> Auto-Reorder Settings</h6>
+                            <p>Medicines at or below reorder level will be automatically included in next purchase order.</p>
+                            <p>Critical stock items will be flagged for immediate reorder.</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="updateReorderSettings()">Update Settings</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(inventoryModal);
+        
+        // Show modal (requires Bootstrap)
+        const modal = new bootstrap.Modal(inventoryModal);
+        modal.show();
+    }
+
+    function reorderMedicine(medicineName) {
+        // In a real implementation, this would add to reorder list
+        console.log(`Reordering medicine: ${medicineName}`);
+        
+        // Show confirmation
+        const confirmationDiv = document.createElement('div');
+        confirmationDiv.className = 'alert alert-success alert-dismissible fade show';
+        confirmationDiv.innerHTML = `
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <strong>Reorder Added!</strong> ${medicineName} has been added to the reorder list.
+        `;
+        
+        // Insert after the inventory modal
+        const inventoryModal = document.getElementById('inventory-modal');
+        if (inventoryModal) {
+            inventoryModal.parentNode.insertBefore(confirmationDiv, inventoryModal.nextSibling);
+        }
+        
+        setTimeout(() => {
+            confirmationDiv.remove();
+        }, 3000);
+    }
+
+    function updateReorderSettings() {
+        // In a real implementation, this would save to database
+        console.log('Updating reorder settings...');
+        
+        // Show success message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <strong>Success!</strong> Reorder settings have been updated.
+        `;
+        
+        const inventoryModal = document.getElementById('inventory-modal');
+        if (inventoryModal) {
+            inventoryModal.parentNode.insertBefore(alertDiv, inventoryModal.nextSibling);
+        }
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+    }
+    // Patient Education Materials Functions
+    function toggleEducationMaterials() {
+        const educationSection = document.getElementById('education-materials');
+        educationSection.style.display = educationSection.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function updateEducationMaterials() {
+        const educationType = document.getElementById('education-type').value;
+        const educationFormat = document.getElementById('education-format').value;
+        const includeStandard = document.getElementById('include-standard').checked;
+        const educationNotes = document.getElementById('education-notes').value;
+        
+        if (!educationType || !educationFormat) {
+            alert('Please select education type and format');
+            return;
+        }
+        
+        // In a real implementation, this would generate appropriate materials
+        const educationData = {
+            patientId: "{{ prescription.patient.id }}",
+            prescriptionId: "{{ prescription.id }}",
+            educationType: educationType,
+            format: educationFormat,
+            includeStandard: includeStandard,
+            notes: educationNotes,
+            medicines: []
+        };
+        
+        // Collect medicine data
+        document.querySelectorAll('.medicine-item').forEach(item => {
+            const medicineSelect = item.querySelector('select[name="medicine_id"]');
+            if (medicineSelect.value) {
+                const medicineName = medicineSelect.options[medicineSelect.selectedIndex].text.split(' - ')[0];
+                educationData.medicines.push({
+                    name: medicineName,
+                    dosage: item.querySelector('input[name="dosage"]').value
+                });
+            }
+        });
+        
+        console.log('Education materials data:', educationData);
+        
+        // Show success message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <strong>Success!</strong> Education materials will be generated and sent to patient.
+        `;
+        
+        const educationSection = document.getElementById('education-materials');
+        educationSection.parentNode.insertBefore(alertDiv, educationSection.nextSibling);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+    }
+
+    function generateEducationMaterials() {
+        const educationType = document.getElementById('education-type').value;
+        const educationFormat = document.getElementById('education-format').value;
+        const includeStandard = document.getElementById('include-standard').checked;
+        const educationNotes = document.getElementById('education-notes').value;
+        
+        // Generate content based on type
+        let content = '';
+        
+        if (educationType === 'usage') {
+            content = generateUsageGuide();
+        } else if (educationType === 'side-effects') {
+            content = generateSideEffectsInfo();
+        } else if (educationType === 'interactions') {
+            content = generateInteractionGuide();
+        } else if (educationType === 'storage') {
+            content = generateStorageInstructions();
+        } else if (educationType === 'lifestyle') {
+            content = generateLifestyleAdvice();
+        }
+        
+        // In a real implementation, this would generate and send the materials
+        console.log(`Generating ${educationType} materials in ${educationFormat} format`);
+        
+        // Show success message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <strong>Materials Generated!</strong> Patient education materials have been generated.
+        `;
+        
+        const educationSection = document.getElementById('education-materials');
+        educationSection.parentNode.insertBefore(alertDiv, educationSection.nextSibling);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+    }
+
+    function generateUsageGuide() {
+        return `
+            <h5>Medication Usage Guide</h5>
+            <h6>How to Take Your Medication</h6>
+            <ol>
+                <li>Take at the same time each day to maintain consistent blood levels</li>
+                <li>Take with or without food as directed by your pharmacist</li>
+                <li>Do not crush or chew extended-release tablets</li>
+                <li>Complete the full course of medication even if you feel better</li>
+            </ol>
+            <h6>What to Do If You Miss a Dose</h6>
+            <ol>
+                <li>Take the missed dose as soon as you remember</li>
+                <li>If it's close to the next dose time, skip the missed dose</li>
+                <li>Do not double up on the next dose</li>
+            </ol>
+        `;
+    }
+
+    function generateSideEffectsInfo() {
+        return `
+            <h5>Medication Side Effects</h5>
+            <h6>Common Side Effects</h6>
+            <ul>
+                <li>Nausea or vomiting</li>
+                <li>Dizziness or drowsiness</li>
+                <li>Headache</li>
+                <li>Skin rash or itching</li>
+            </ul>
+            <h6>When to Contact Your Doctor</h6>
+            <ol>
+                <li>Severe allergic reaction (difficulty breathing, swelling of face/throat)</li>
+                <li>Unusual bleeding or bruising</li>
+                <li>Severe headache or vision changes</li>
+                <li>Yellowing of the skin or eyes</li>
+            </ol>
+        `;
+    }
+
+    function generateInteractionGuide() {
+        return `
+            <h5>Drug Interaction Guide</h5>
+            <h6>Foods to Avoid</h6>
+            <ul>
+                <li>Grapefruit or grapefruit juice</li>
+                <li>Alcohol</li>
+                <li>High-fat meals (for some medications)</li>
+            </ul>
+            <h6>Other Medications to Avoid</h6>
+            <ul>
+                <li>Other antibiotics without medical supervision</li>
+                <li>Blood thinners</li>
+                <li>Certain herbal supplements</li>
+            </ul>
+        `;
+    }
+
+    function generateStorageInstructions() {
+        return `
+            <h5>Medication Storage Guide</h5>
+            <h6>General Storage</h6>
+            <ul>
+                <li>Store at room temperature unless refrigeration is required</li>
+                <li>Keep in original container</li>
+                <li>Protect from light and moisture</li>
+                <li>Keep out of reach of children</li>
+            </ul>
+            <h6>Special Storage</h6>
+            <ul>
+                <li>Refrigerate after opening if required</li>
+                <li>Discard after expiration date</li>
+                <li>Do not freeze unless specifically instructed</li>
+            </ul>
+        `;
+    }
+
+    function generateLifestyleAdvice() {
+        return `
+            <h5>Lifestyle Considerations</h5>
+            <h6>Dietary Considerations</h6>
+            <ul>
+                <li>Avoid driving until you know how this medication affects you</li>
+                <li>Limit alcohol consumption</li>
+                <li>Maintain consistent sleep schedule</li>
+            </ul>
+            <h6>Activity Considerations</h6>
+            <ul>
+                <li>Avoid strenuous exercise until medication effects are known</li>
+                <li>Stay hydrated</li>
+                <li>Monitor blood pressure if applicable</li>
+            </ul>
+        `;
+    }
+    // Telepharmacy Consultation Functions
+    function initiateTelepharmacy() {
+        const telepharmacyModal = document.createElement('div');
+        telepharmacyModal.className = 'modal fade';
+        telepharmacyModal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-video"></i> Telepharmacy Consultation
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Consultation Type</label>
+                                    <select class="form-select" id="consultation-type">
+                                        <option value="">Select consultation type</option>
+                                        <option value="general">General Consultation</option>
+                                        <option value="followup">Follow-up Consultation</option>
+                                        <option value="urgent">Urgent Consultation</option>
+                                        <option value="side-effects">Side Effects Discussion</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Preferred Date</label>
+                                    <input type="datetime-local" class="form-control" id="consultation-date">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Consultation Method</label>
+                                    <select class="form-select" id="consultation-method">
+                                        <option value="video">Video Call</option>
+                                        <option value="audio">Audio Call</option>
+                                        <option value="chat">Text Chat</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Patient Contact</label>
+                                    <input type="tel" class="form-control" id="patient-contact" 
+                                           placeholder="Enter phone or email">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Consultation Notes</label>
+                                    <textarea class="form-control" id="consultation-notes" rows="4" 
+                                              placeholder="Reason for consultation..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Telepharmacy Service</h6>
+                            <p>Connect patients with pharmacists remotely for consultations about their medications.</p>
+                            <ul>
+                                <li>Video consultations for visual medication review</li>
+                                <li>Audio consultations for patients with limited mobility</li>
+                                <li>Text chat for quick questions and clarifications</li>
+                                <li>Reduced need for in-person pharmacy visits</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="scheduleTelepharmacy()">Schedule Consultation</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(telepharmacyModal);
+        
+        // Show modal (requires Bootstrap)
+        const modal = new bootstrap.Modal(telepharmacyModal);
+        modal.show();
+    }
+
+    function scheduleTelepharmacy() {
+        const consultationType = document.getElementById('consultation-type').value;
+        const consultationDate = document.getElementById('consultation-date').value;
+        const consultationMethod = document.getElementById('consultation-method').value;
+        const patientContact = document.getElementById('patient-contact').value;
+        const consultationNotes = document.getElementById('consultation-notes').value;
+        
+        if (!consultationType || !consultationDate || !patientContact) {
+            alert('Please fill in required consultation information');
+            return;
+        }
+        
+        // In a real implementation, this would schedule the consultation
+        const consultationData = {
+            patientId: "{{ prescription.patient.id }}",
+            prescriptionId: "{{ prescription.id }}",
+            consultationType: consultationType,
+            consultationDate: consultationDate,
+            consultationMethod: consultationMethod,
+            patientContact: patientContact,
+            notes: consultationNotes
+        };
+        
+        console.log('Scheduling telepharmacy consultation:', consultationData);
+        
+        // Show success message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <strong>Consultation Scheduled!</strong> Telepharmacy consultation has been scheduled.
+        `;
+        
+        const telepharmacyModal = document.getElementById('telepharmacy-modal');
+        telepharmacyModal.parentNode.insertBefore(alertDiv, telepharmacyModal.nextSibling);
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('telepharmacy-modal'));
+        modal.hide();
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+    }
+    // Multi-language Support Functions
+    const translations = {
+        'en': {
+            'takeWith': 'Take with',
+            'avoidAlcohol': 'Avoid alcohol',
+            'storeRoomTemp': 'Store at room temperature',
+            'keepOutReach': 'Keep out of reach of children',
+            'consultDoctor': 'Consult your doctor'
+        },
+        'es': {
+            'takeWith': 'Tomar con',
+            'avoidAlcohol': 'Evitar el alcohol',
+            'storeRoomTemp': 'Almacenar a temperatura ambiente',
+            'keepOutReach': 'Mantener fuera del alcance de los niños',
+            'consultDoctor': 'Consulte a su médico'
+        },
+        'fr': {
+            'takeWith': 'Prendre avec',
+            'avoidAlcohol': 'Éviter l\'alcool',
+            'storeRoomTemp': 'Conserver à température ambiante',
+            'keepOutReach': 'Tenir hors de la portée des enfants',
+            'consultDoctor': 'Consultez votre médecin'
+        },
+        'zh': {
+            'takeWith': '与...同服',
+            'avoidAlcohol': '避免饮酒',
+            'storeRoomTemp': '室温储存',
+            'keepOutReach': '放在儿童接触不到的地方',
+            'consultDoctor': '咨询医生'
+        }
+    };
+
+    let currentLanguage = 'en'; // Default language
+
+    function changeLanguage(lang) {
+        currentLanguage = lang;
+        
+        // Update button states
+        document.querySelectorAll('[id^="lang-"]').forEach(btn => {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-outline-secondary');
+        });
+        document.getElementById(`lang-${lang}`).classList.remove('btn-outline-secondary');
+        document.getElementById(`lang-${lang}`).classList.add('btn-primary');
+        
+        // Translate instructions
+        translateInstructions();
+        
+        // Update any other dynamic content
+        updateAllTranslations();
+    }
+
+    function translateInstructions() {
+        const instructionsContent = document.getElementById('instructions-content');
+        if (instructionsContent) {
+            const originalInstructions = "{{ prescription.instructions }}";
+            instructionsContent.textContent = getTranslatedInstruction(originalInstructions);
+        }
+    }
+
+    function getTranslatedInstruction(instruction) {
+        // Simple keyword-based translation for demo
+        const translation = translations[currentLanguage];
+        
+        let translated = instruction;
+        
+        // Replace common phrases
+        Object.keys(translation).forEach(key => {
+            translated = translated.replace(new RegExp(key, 'gi'), translation[key]);
+        });
+        
+        return translated;
+    }
+
+    function updateAllTranslations() {
+        // Update all translatable elements on the page
+        const elementsToUpdate = [
+            { id: 'prescription-instructions-label', key: 'Instructions:' },
+            { id: 'allergy-alert-title', key: 'Allergy Alert' },
+            { id: 'interaction-alert-title', key: 'Drug Interaction Warning' },
+            { id: 'expiry-warning-title', key: 'Expiry Warning' },
+            { id: 'dosage-calculator-title', key: 'Dosage Calculator' },
+            { id: 'refill-reminder-title', key: 'Refill Reminders' },
+            { id: 'patient-education-title', key: 'Patient Education' },
+            { id: 'telepharmacy-title', key: 'Telepharmacy Consultation' }
+        ];
+        
+        elementsToUpdate.forEach(element => {
+            const el = document.getElementById(element.id);
+            if (el && translations[currentLanguage][element.key]) {
+                el.textContent = translations[currentLanguage][element.key];
+            }
+        });
+    }
+    // Medication Adherence Tracking Functions
+    function toggleAdherenceTracking() {
+        const adherenceSection = document.getElementById('adherence-tracking');
+        adherenceSection.style.display = adherenceSection.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function saveAdherenceSettings() {
+        const trackingPeriod = document.getElementById('tracking-period').value;
+        const reminderMethod = document.getElementById('adherence-reminder').value;
+        const adherenceNotes = document.getElementById('adherence-notes').value;
+        
+        // In a real implementation, this would save to database
+        const adherenceData = {
+            patientId: "{{ prescription.patient.id }}",
+            prescriptionId: "{{ prescription.id }}",
+            trackingPeriod: trackingPeriod,
+            reminderMethod: reminderMethod,
+            notes: adherenceNotes,
+            medicines: []
+        };
+        
+        // Collect medicine data
+        document.querySelectorAll('.medicine-item').forEach(item => {
+            const medicineSelect = item.querySelector('select[name="medicine_id"]');
+            if (medicineSelect.value) {
+                const medicineName = medicineSelect.options[medicineSelect.selectedIndex].text.split(' - ')[0];
+                adherenceData.medicines.push({
+                    name: medicineName,
+                    dosage: item.querySelector('input[name="dosage"]').value,
+                    quantity: item.querySelector('input[name="quantity"]').value
+                });
+            }
+        });
+        
+        console.log('Adherence tracking data:', adherenceData);
+        
+        // Show success message
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <strong>Success!</strong> Adherence tracking has been set up for patient.
+        `;
+        
+        const adherenceSection = document.getElementById('adherence-tracking');
+        adherenceSection.parentNode.insertBefore(alertDiv, adherenceSection.nextSibling);
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+    }
+
+    function scheduleAdherenceReminders() {
+        // In a real implementation, this would set up actual reminders
+        const reminderMethod = document.getElementById('adherence-reminder').value;
+        const trackingPeriod = document.getElementById('tracking-period').value;
+        
+        console.log(`Scheduling ${reminderMethod} adherence reminders for ${trackingPeriod}`);
+        
+        // Show confirmation
+        const confirmationDiv = document.createElement('div');
+        confirmationDiv.className = 'alert alert-info alert-dismissible fade show';
+        confirmationDiv.innerHTML = `
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <strong>Reminders Scheduled!</strong> Patient will receive ${reminderMethod} adherence reminders for ${trackingPeriod}.
+        `;
+        
+        const adherenceSection = document.getElementById('adherence-tracking');
+        adherenceSection.parentNode.insertBefore(confirmationDiv, adherenceSection.nextSibling);
+        
+        setTimeout(() => {
+            confirmationDiv.remove();
+        }, 3000);
+    }
+    // Drug Database Integration Functions
+    function checkDrugDatabase() {
+        // In a real implementation, this would query a drug database
+        const drugDatabase = {
+            'Amoxicillin': {
+                category: 'Antibiotic',
+                sideEffects: ['Nausea', 'Vomiting', 'Diarrhea', 'Rash', 'Allergic reactions'],
+                interactions: ['Allopurinol', 'Methotrexate', 'Warfarin', 'Probenecid'],
+                contraindications: ['Mononucleosis', 'Infectious mononucleosis'],
+                warnings: ['May reduce effectiveness of oral contraceptives']
+            },
+            'Ibuprofen': {
+                category: 'NSAID',
+                sideEffects: ['Stomach pain', 'Heartburn', 'Headache', 'Dizziness', 'Rash'],
+                interactions: ['Aspirin', 'Warfarin', 'Lithium', 'Methotrexate'],
+                contraindications: ['Active ulcer', 'Bleeding disorders', 'Severe heart failure'],
+                warnings: ['Avoid with alcohol', 'May cause kidney problems with long-term use']
+            },
+            'Paracetamol': {
+                category: 'Analgesic',
+                sideEffects: ['Liver damage (high doses)', 'Skin rash', 'Nausea'],
+                interactions: ['Alcohol (increases liver damage)', 'Warfarin', 'Isoniazid'],
+                contraindications: ['Severe liver disease', 'Alcoholism'],
+                warnings: ['Do not exceed 4g per day', 'Avoid with other paracetamol products']
+            },
+            'Lisinopril': {
+                category: 'ACE Inhibitor',
+                sideEffects: ['Dry cough', 'Dizziness', 'Headache', 'Fatigue'],
+                interactions: ['Potassium supplements', 'NSAIDs', 'Lithium'],
+                contraindications: ['Pregnancy', 'Angioedema', 'Bilateral renal artery stenosis'],
+                warnings: ['May cause birth defects in pregnancy', 'Monitor potassium levels']
+            }
+        };
+        
+        // Create drug database modal
+        const drugDbModal = document.createElement('div');
+        drugDbModal.className = 'modal fade';
+        drugDbModal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-database"></i> Drug Information Database
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Select Medicine</label>
+                                <select class="form-select" id="drug-select" onchange="displayDrugInfo()">
+                                    <option value="">Select a medicine</option>
+                                    ${Object.keys(drugDatabase).map(drug => 
+                                        `<option value="${drug}">${drug}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Information Type</label>
+                                <select class="form-select" id="info-type" onchange="displayDrugInfo()">
+                                    <option value="side-effects">Side Effects</option>
+                                    <option value="interactions">Drug Interactions</option>
+                                    <option value="contraindications">Contraindications</option>
+                                    <option value="warnings">Warnings</option>
+                                    <option value="all">All Information</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div id="drug-info-display" class="card bg-light">
+                            <div class="card-body">
+                                <h6 id="drug-info-title">Select a medicine to view information</h6>
+                                <div id="drug-info-content">
+                                    <p class="text-muted">Choose a medicine from the dropdown to see detailed drug information.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(drugDbModal);
+        
+        // Show modal (requires Bootstrap)
+        const modal = new bootstrap.Modal(drugDbModal);
+        modal.show();
+    }
+
+    function displayDrugInfo() {
+        const selectedDrug = document.getElementById('drug-select').value;
+        const infoType = document.getElementById('info-type').value;
+        const infoDisplay = document.getElementById('drug-info-display');
+        const infoTitle = document.getElementById('drug-info-title');
+        const infoContent = document.getElementById('drug-info-content');
+        
+        if (!selectedDrug) {
+            infoTitle.textContent = 'Select a medicine to view information';
+            infoContent.innerHTML = '<p class="text-muted">Choose a medicine from the dropdown to see detailed drug information.</p>';
+            return;
+        }
+        
+        const drugInfo = drugDatabase[selectedDrug];
+        if (!drugInfo) {
+            infoTitle.textContent = selectedDrug;
+            infoContent.innerHTML = '<p class="text-muted">Information not available for this medicine.</p>';
+            return;
+        }
+        
+        infoTitle.textContent = `${selectedDrug} - ${infoType.charAt(0).toUpperCase() + infoType.slice(1)}`;
+        
+        let content = '';
+        
+        if (infoType === 'side-effects') {
+            content = `
+                <h6>Common Side Effects</h6>
+                <ul>
+                    ${drugInfo.sideEffects.map(effect => `<li>${effect}</li>`).join('')}
+                </ul>
+            `;
+        } else if (infoType === 'interactions') {
+            content = `
+                <h6>Drug Interactions</h6>
+                <ul>
+                    ${drugInfo.interactions.map(interaction => `<li><strong>${interaction}</strong></li>`).join('')}
+                </ul>
+            `;
+        } else if (infoType === 'contraindications') {
+            content = `
+                <h6>Contraindications</h6>
+                <ul>
+                    ${drugInfo.contraindications.map(contraindication => `<li>${contraindication}</li>`).join('')}
+                </ul>
+            `;
+        } else if (infoType === 'warnings') {
+            content = `
+                <h6>Warnings</h6>
+                <ul>
+                    ${drugInfo.warnings.map(warning => `<li>${warning}</li>`).join('')}
+                </ul>
+            `;
+        } else if (infoType === 'all') {
+            content = `
+                <h6>Complete Drug Information</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Category</h6>
+                        <p>${drugInfo.category}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Side Effects</h6>
+                        <ul>
+                            ${drugInfo.sideEffects.map(effect => `<li>${effect}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Drug Interactions</h6>
+                        <ul>
+                            ${drugInfo.interactions.map(interaction => `<li><strong>${interaction}</strong></li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Contraindications</h6>
+                        <ul>
+                            ${drugInfo.contraindications.map(contraindication => `<li>${contraindication}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <h6>Warnings</h6>
+                        <ul>
+                            ${drugInfo.warnings.map(warning => `<li>${warning}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+        
+        infoContent.innerHTML = content;
+    }

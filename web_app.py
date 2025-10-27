@@ -320,6 +320,8 @@ class PharmacyOrder(db.Model):
     discount = db.Column(db.Float, default=0)
     tax_amount = db.Column(db.Float, default=0)
     final_amount = db.Column(db.Float)
+    payment_method = db.Column(db.String(50))  # cash, card, online, insurance
+    pharmacist_notes = db.Column(db.Text)
     payment_status = db.Column(db.String(20), default='pending')  # pending, paid, partial
     status = db.Column(db.String(20), default='pending')  # pending, dispensed, cancelled
     
@@ -334,6 +336,7 @@ class PharmacyOrderItem(db.Model):
     quantity = db.Column(db.Integer, nullable=False)
     unit_price = db.Column(db.Float, nullable=False)
     total_price = db.Column(db.Float, nullable=False)
+    dosage = db.Column(db.String(200))  # Dosage instructions for this medicine
     
     pharmacy_order = db.relationship('PharmacyOrder', backref='items')
     medicine = db.relationship('Medicine', backref='order_items')
@@ -2238,6 +2241,8 @@ def dispense_medicine(prescription_id):
             discount=float(request.form.get('discount', 0)),
             tax_amount=float(request.form.get('tax_amount', 0)),
             final_amount=float(request.form['final_amount']),
+            payment_method=request.form.get('payment_method', 'cash'),
+            pharmacist_notes=request.form.get('pharmacist_notes', ''),
             status='dispensed'
         )
         
@@ -2248,6 +2253,7 @@ def dispense_medicine(prescription_id):
         medicine_ids = request.form.getlist('medicine_id')
         quantities = request.form.getlist('quantity')
         unit_prices = request.form.getlist('unit_price')
+        dosages = request.form.getlist('dosage')
         
         for i, medicine_id in enumerate(medicine_ids):
             if medicine_id:
@@ -2256,13 +2262,27 @@ def dispense_medicine(prescription_id):
                     medicine_id=int(medicine_id),
                     quantity=int(quantities[i]),
                     unit_price=float(unit_prices[i]),
-                    total_price=int(quantities[i]) * float(unit_prices[i])
+                    total_price=int(quantities[i]) * float(unit_prices[i]),
+                    dosage=dosages[i] if i < len(dosages) else ''
                 )
                 db.session.add(item)
                 
                 # Update medicine stock
-                medicine = db.session.get(Medicine, medicine_id)
+                medicine = Medicine.query.get(medicine_id)
                 medicine.stock_quantity -= int(quantities[i])
+        
+        # Save patient signature if provided
+        signature_data = request.form.get('signature_data')
+        if signature_data:
+            # In a real implementation, save signature data to file or database
+            # For now, we'll just log it
+            if audit_logger:
+                audit_logger.log_user_activity(
+                    'medicine_dispense_signature',
+                    'pharmacy_order',
+                    order.id,
+                    {'signature_length': len(signature_data)}
+                )
         
         prescription.status = 'completed'
         db.session.commit()
