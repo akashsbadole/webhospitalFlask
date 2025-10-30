@@ -2,12 +2,10 @@
 get_text('title') }}{% endblock %} {% block extra_css %}
 <style>
   .welcome-header {
-    background: linear-gradient(
-      135deg,
-      var(--primary-600) 0%,
-      var(--primary-800) 50%,
-      var(--primary-900) 100%
-    );
+    background: linear-gradient(135deg,
+        var(--primary-600) 0%,
+        var(--primary-800) 50%,
+        var(--primary-900) 100%);
     color: white;
     border-radius: var(--border-radius-xl);
     position: relative;
@@ -21,11 +19,9 @@ get_text('title') }}{% endblock %} {% block extra_css %}
     right: 0;
     width: 300px;
     height: 300px;
-    background: radial-gradient(
-      circle,
-      rgba(255, 255, 255, 0.1) 0%,
-      transparent 70%
-    );
+    background: radial-gradient(circle,
+        rgba(255, 255, 255, 0.1) 0%,
+        transparent 70%);
     transform: translate(100px, -100px);
   }
 
@@ -282,45 +278,39 @@ get_text('title') }}{% endblock %} {% block extra_css %}
         </div>
         <div class="card-body">
           <div class="quick-actions-grid">
-            <a href="{{ url_for('add_patient') }}" class="btn btn-primary">
+            <a href="{{ url_for('patients.add') }}" class="btn btn-primary">
               <i class="fas fa-user-plus"></i>
               <span>{{ get_text('add_patient') }}</span>
             </a>
 
-            <a href="{{ url_for('add_appointment') }}" class="btn btn-success">
+            <a href="{{ url_for('appointments.add') }}" class="btn btn-success">
               <i class="fas fa-calendar-plus"></i>
               <span>{{ get_text('schedule_new') }}</span>
             </a>
 
-            <a href="{{ url_for('telemedicine') }}" class="btn btn-info">
+            <a href="{{ url_for('appointments.telemedicine') }}" class="btn btn-info">
               <i class="fas fa-video"></i>
               <span>{{ get_text('telemedicine') }}</span>
             </a>
 
-            <a href="{{ url_for('enquiries') }}" class="btn btn-warning">
+            <a href="{{ url_for('main.enquiries') }}" class="btn btn-warning">
               <i class="fas fa-envelope"></i>
               <span>{{ get_text('enquiries') }}</span>
             </a>
 
             {% if current_user.role in ['admin', 'hr'] %}
-            <a href="{{ url_for('attendance') }}" class="btn btn-secondary">
+            <a href="{{ url_for('admin.attendance') }}" class="btn btn-secondary">
               <i class="fas fa-clock"></i>
               <span>{{ get_text('attendance') }}</span>
             </a>
             {% endif %} {% if current_user.role in ['admin', 'doctor', 'nurse']
             %}
-            <a
-              href="{{ url_for('admissions') }}"
-              class="btn btn-outline-primary"
-            >
+            <a href="{{ url_for('clinical.admissions') }}" class="btn btn-outline-primary">
               <i class="fas fa-bed"></i>
               <span>{{ get_text('admissions') }}</span>
             </a>
             {% endif %} {% if current_user.role in ['admin', 'pharmacist'] %}
-            <a
-              href="{{ url_for('pharmacy_medicines') }}"
-              class="btn btn-outline-success"
-            >
+            <a href="{{ url_for('pharmacy.medicines') }}" class="btn btn-outline-success">
               <i class="fas fa-pills"></i>
               <span>{{ get_text('pharmacy') }}</span>
             </a>
@@ -349,35 +339,25 @@ get_text('title') }}{% endblock %} {% block extra_css %}
           {% if recent_patients %}
           <div class="list-group list-group-flush">
             {% for patient in recent_patients %}
-            <div
-              class="list-group-item d-flex justify-content-between align-items-center"
-            >
+            <div class="list-group-item d-flex justify-content-between align-items-center">
               <div>
                 <h6 class="mb-1">
                   {{ patient.first_name }} {{ patient.last_name }}
                 </h6>
                 <small class="text-muted">ID: {{ patient.patient_id }}</small>
               </div>
-              <small class="text-muted"
-                >{{ patient.created_at.strftime('%m/%d') }}</small
-              >
+              <small class="text-muted">{{ patient.created_at.strftime('%m/%d') }}</small>
             </div>
             {% endfor %}
           </div>
           <div class="text-center mt-3">
-            <a
-              href="{{ url_for('patients') }}"
-              class="btn btn-sm btn-outline-primary"
-              >View All</a
-            >
+            <a href="{{ url_for('patients.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
           </div>
           {% else %}
           <div class="text-center text-muted py-4">
             <i class="fas fa-users fa-3x mb-3 opacity-50"></i>
             <p>No patients registered yet</p>
-            <a href="{{ url_for('add_patient') }}" class="btn btn-primary"
-              >Add First Patient</a
-            >
+            <a href="{{ url_for('patients.add') }}" class="btn btn-primary">Add First Patient</a>
           </div>
           {% endif %}
         </div>
@@ -405,16 +385,13 @@ get_text('title') }}{% endblock %} {% block extra_css %}
                   </h6>
                   <small class="text-muted">
                     <i class="fas fa-user-md"></i> {{
-                    appointment.doctor.full_name }} </small
-                  ><br />
+                    appointment.doctor.full_name }} </small><br />
                   <small class="text-muted">
                     <i class="fas fa-calendar"></i> {{
                     appointment.appointment_date.strftime('%m/%d %I:%M %p') }}
                   </small>
                 </div>
-                <span
-                  class="badge bg-{{ 'info' if appointment.appointment_type == 'telemedicine' else 'primary' }}"
-                >
+                <span class="badge bg-{{ 'info' if appointment.appointment_type == 'telemedicine' else 'primary' }}">
                   {{ appointment.appointment_type.title() }}
                 </span>
               </div>
@@ -422,19 +399,13 @@ get_text('title') }}{% endblock %} {% block extra_css %}
             {% endfor %}
           </div>
           <div class="text-center mt-3">
-            <a
-              href="{{ url_for('appointments') }}"
-              class="btn btn-sm btn-outline-success"
-              >View All</a
-            >
+            <a href="{{ url_for('appointments.index') }}" class="btn btn-sm btn-outline-success">View All</a>
           </div>
           {% else %}
           <div class="text-center text-muted py-4">
             <i class="fas fa-calendar-alt fa-3x mb-3 opacity-50"></i>
             <p>No upcoming appointments</p>
-            <a href="{{ url_for('add_appointment') }}" class="btn btn-success"
-              >Schedule Appointment</a
-            >
+            <a href="{{ url_for('appointments.add') }}" class="btn btn-success">Schedule Appointment</a>
           </div>
           {% endif %}
         </div>
@@ -461,16 +432,13 @@ get_text('title') }}{% endblock %} {% block extra_css %}
                   </h6>
                   <small class="text-muted">
                     <i class="fas fa-bed"></i> {{ admission.bed.ward.name }} -
-                    {{ admission.bed.bed_number }} </small
-                  ><br />
+                    {{ admission.bed.bed_number }} </small><br />
                   <small class="text-muted">
                     <i class="fas fa-calendar"></i> {{
                     admission.admission_date.strftime('%m/%d %I:%M %p') }}
                   </small>
                 </div>
-                <span
-                  class="badge bg-{{ 'danger' if admission.admission_type == 'emergency' else 'info' }}"
-                >
+                <span class="badge bg-{{ 'danger' if admission.admission_type == 'emergency' else 'info' }}">
                   {{ admission.admission_type.title() }}
                 </span>
               </div>
@@ -478,20 +446,14 @@ get_text('title') }}{% endblock %} {% block extra_css %}
             {% endfor %}
           </div>
           <div class="text-center mt-3">
-            <a
-              href="{{ url_for('admissions') }}"
-              class="btn btn-sm btn-outline-warning"
-              >View All</a
-            >
+            <a href="{{ url_for('clinical.admissions') }}" class="btn btn-sm btn-outline-warning">View All</a>
           </div>
           {% else %}
           <div class="text-center text-muted py-4">
             <i class="fas fa-bed fa-3x mb-3 opacity-50"></i>
             <p>No current admissions</p>
             {% if current_user.role in ['admin', 'doctor'] %}
-            <a href="{{ url_for('add_admission') }}" class="btn btn-warning"
-              >Admit Patient</a
-            >
+            <a href="{{ url_for('clinical.admissions') }}" class="btn btn-warning">Admit Patient</a>
             {% endif %}
           </div>
           {% endif %}
